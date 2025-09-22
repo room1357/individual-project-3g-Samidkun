@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
 import 'expense_list_screen.dart';
+import 'profile_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -9,7 +11,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Home'),
+        title: const Text('Home'),
         backgroundColor: Colors.blue,
         actions: [
           IconButton(
@@ -21,16 +23,16 @@ class HomeScreen extends StatelessWidget {
                 (route) => false, // Hapus semua route sebelumnya
               );
             },
-            icon: Icon(Icons.logout),
+            icon: const Icon(Icons.logout),
           ),
         ],
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Dashboard',
               style: TextStyle(
                 fontSize: 24,
@@ -38,7 +40,7 @@ class HomeScreen extends StatelessWidget {
                 color: Colors.blue,
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
@@ -52,9 +54,21 @@ class HomeScreen extends StatelessWidget {
                       MaterialPageRoute(builder: (context) => const ExpenseListScreen()),
                     );
                   }),
-                  _buildDashboardCard('Profile', Icons.person, Colors.blue, null),
+                  _buildDashboardCard('Profile', Icons.person, Colors.blue, () {
+                    // Navigasi ke ProfileScreen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                    );
+                  }),
                   _buildDashboardCard('Message', Icons.message, Colors.orange, null),
-                  _buildDashboardCard('Setting', Icons.settings, Colors.purple, null),
+                  _buildDashboardCard('Setting', Icons.settings, Colors.purple, () {
+                    // Navigasi ke SettingsScreen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                    );
+                  }),
                 ],
               ),
             ),
@@ -64,26 +78,28 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDashboardCard(String title, IconData icon, Color color, VoidCallback? onTap) {
+  Widget _buildDashboardCard(
+      String title, IconData icon, Color color, VoidCallback? onTap) {
     return Card(
       elevation: 4,
       child: Builder(
         builder: (context) => InkWell(
-          onTap: onTap ?? () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Feature $title Coming soon!')),
-            );
-          },
+          onTap: onTap ??
+              () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Feature $title Coming soon!')),
+                );
+              },
           child: Container(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(icon, size: 48, color: color),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Text(
                   title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
