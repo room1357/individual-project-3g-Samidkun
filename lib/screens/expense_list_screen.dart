@@ -486,12 +486,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                   ],
 
                   const SizedBox(height: 16),
-                  const Text('=== Filter Kategori "Makanan" ==='),
+                  const Text('=== Filter Kategori "Transportasi" ==='),
                   Text(
-                    'Manual: ${LoopingExamples.filterByCategoryManual(_visible, "Makanan").length} item',
+                    'Manual: ${LoopingExamples.filterByCategoryManual(_visible, "Transportasi").length} item',
                   ),
                   Text(
-                    'where(): ${LoopingExamples.filterByCategoryWhere(_visible, "Makanan").length} item',
+                    'where(): ${LoopingExamples.filterByCategoryWhere(_visible, "Transportasi").length} item',
                   ),
                 ],
               ),
