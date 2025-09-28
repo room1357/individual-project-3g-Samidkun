@@ -1,26 +1,29 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
 import 'expense_list_screen.dart';
-import 'profile_screen.dart';
-import 'settings_screen.dart';
+import '../services/expense_service.dart';
+import '../utils/currency_utils.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final svc = ExpenseService.instance;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
+        title: const Text('Expense Manager'),
         backgroundColor: Colors.blue,
         actions: [
           IconButton(
+            tooltip: 'Logout',
             onPressed: () {
-              // Logout dengan pushAndRemoveUntil
+              // Logout: kembali ke Login dan hapus semua route sebelumnya
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false, // Hapus semua route sebelumnya
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
               );
             },
             icon: const Icon(Icons.logout),
@@ -32,6 +35,7 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header + Total
             const Text(
               'Dashboard',
               style: TextStyle(
@@ -40,33 +44,71 @@ class HomeScreen extends StatelessWidget {
                 color: Colors.blue,
               ),
             ),
+            const SizedBox(height: 12),
+            Card(
+              elevation: 2,
+              child: ListTile(
+                title: const Text('Total Pengeluaran'),
+                subtitle: const Text('Semua kategori & bulan'),
+                trailing: Text(
+                  rp(svc.totalAll),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
+
+            // Grid menu Proyek 1
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
                 children: [
+                  // 1) Expenses (daftar + edit dari screen kamu)
                   _buildDashboardCard('Expenses', Icons.attach_money, Colors.green, () {
-                    // Navigasi ke ExpenseListScreen
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const ExpenseListScreen()),
+                      MaterialPageRoute(builder: (_) => const ExpenseListScreen()),
                     );
                   }),
-                  _buildDashboardCard('Profile', Icons.person, Colors.blue, () {
-                    // Navigasi ke ProfileScreen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ProfileScreen()),
-                    );
+
+                  // 2) Add Expense
+                  _buildDashboardCard('Add Expense', Icons.add_circle, Colors.teal, () async {
+                    final ok = await Navigator.pushNamed(context, '/add');
+                    if (ok == true && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Pengeluaran ditambahkan')),
+                      );
+                    }
                   }),
-                  _buildDashboardCard('Message', Icons.message, Colors.orange, null),
+
+                  // 3) Categories (kelola kategori)
+                  _buildDashboardCard('Categories', Icons.category, Colors.indigo, () {
+                    Navigator.pushNamed(context, '/categories');
+                  }),
+
+                  // 4) Statistics (grafik & ringkasan)
+                  _buildDashboardCard('Statistics', Icons.bar_chart, Colors.orange, () {
+                    Navigator.pushNamed(context, '/stats');
+                  }),
+
+                  // 5) (Opsional) Export CSV — aktifkan jika sudah bikin util-nya
+                  // _buildDashboardCard('Export CSV', Icons.download, Colors.brown, () async {
+                  //   await ExportUtils.exportCsv('expenses.csv');
+                  //   if (!context.mounted) return;
+                  //   ScaffoldMessenger.of(context).showSnackBar(
+                  //     const SnackBar(content: Text('CSV diekspor (Web: diunduh).')),
+                  //   );
+                  // }),
+
+                  // Placeholder Setting (boleh dihapus kalau tidak dipakai)
                   _buildDashboardCard('Setting', Icons.settings, Colors.purple, () {
-                    // Navigasi ke SettingsScreen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Feature Setting coming soon!')),
                     );
                   }),
                 ],
@@ -79,7 +121,11 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildDashboardCard(
-      String title, IconData icon, Color color, VoidCallback? onTap) {
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback? onTap,
+  ) {
     return Card(
       elevation: 4,
       child: Builder(
@@ -87,7 +133,7 @@ class HomeScreen extends StatelessWidget {
           onTap: onTap ??
               () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Feature $title Coming soon!')),
+                  SnackBar(content: Text('Feature $title coming soon!')),
                 );
               },
           child: Container(

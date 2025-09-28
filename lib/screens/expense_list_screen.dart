@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/expense.dart';
-import '../utils/looping_examples.dart'; // <<< Latihan 5: import utils
+import '../services/expense_service.dart';
+import '../utils/looping_examples.dart';
+import '../utils/category_style.dart';
 
-/// Daftar Pengeluaran — Latihan 3, 4, 5
-/// - Latihan 3: total per kategori, tertinggi, rata-rata harian
-/// - Latihan 4: pencarian & filter (kategori/bulan/tahun)
-/// - Latihan 5: berbagai cara looping untuk hitung total
 class ExpenseListScreen extends StatefulWidget {
   const ExpenseListScreen({super.key});
 
@@ -14,118 +12,62 @@ class ExpenseListScreen extends StatefulWidget {
 }
 
 class _ExpenseListScreenState extends State<ExpenseListScreen> {
+  // Sumber data tunggal
+  final ExpenseService svc = ExpenseService.instance;
+
   // ----------------------------
-  // Kontrol Pencarian & Filter
+  // Pencarian & Filter
   // ----------------------------
   final TextEditingController _searchC = TextEditingController();
+  String _selectedCategory = 'Semua'; // default
+  int _selectedMonth = 0;             // 0 = Semua bulan
+  int _selectedYear = 0;              // 0 = Semua tahun
 
-  final List<String> _categories = const [
-    'Semua',
-    'Makanan',
-    'Transportasi',
-    'Utilitas',
-    'Hiburan',
-    'Pendidikan',
-  ];
+  /// Data yang ditampilkan setelah filter & search
+  List<Expense> _visible = const [];
 
-  late String _selectedCategory; // di-init 'Semua'
-  int _selectedMonth = 0; // 0 = Semua bulan
-  int _selectedYear = 0;  // 0 = Semua tahun
-
-  // ----------------------------
-  // Data contoh (kategori Indonesia)
-  // ----------------------------
-  final List<Expense> _expenses = [
-    Expense(
-      id: '1',
-      title: 'Belanja Bulanan',
-      amount: 150000,
-      category: 'Makanan',
-      date: DateTime(2024, 9, 15),
-      description: 'Belanja kebutuhan bulanan di supermarket',
-    ),
-    Expense(
-      id: '2',
-      title: 'Bensin Motor',
-      amount: 50000,
-      category: 'Transportasi',
-      date: DateTime(2024, 9, 14),
-      description: 'Isi bensin motor untuk transportasi',
-    ),
-    Expense(
-      id: '3',
-      title: 'Kopi di Cafe',
-      amount: 25000,
-      category: 'Makanan',
-      date: DateTime(2024, 9, 14),
-      description: 'Ngopi pagi dengan teman',
-    ),
-    Expense(
-      id: '4',
-      title: 'Tagihan Internet',
-      amount: 300000,
-      category: 'Utilitas',
-      date: DateTime(2024, 9, 13),
-      description: 'Tagihan internet bulanan',
-    ),
-    Expense(
-      id: '5',
-      title: 'Tiket Bioskop',
-      amount: 100000,
-      category: 'Hiburan',
-      date: DateTime(2024, 9, 12),
-      description: 'Nonton film weekend bersama keluarga',
-    ),
-    Expense(
-      id: '6',
-      title: 'Beli Buku',
-      amount: 75000,
-      category: 'Pendidikan',
-      date: DateTime(2024, 9, 11),
-      description: 'Buku pemrograman untuk belajar',
-    ),
-    Expense(
-      id: '7',
-      title: 'Makan Siang',
-      amount: 35000,
-      category: 'Makanan',
-      date: DateTime(2024, 9, 11),
-      description: 'Makan siang di restoran',
-    ),
-    Expense(
-      id: '8',
-      title: 'Ongkos Bus',
-      amount: 10000,
-      category: 'Transportasi',
-      date: DateTime(2024, 9, 10),
-      description: 'Ongkos perjalanan harian ke kampus',
-    ),
-  ];
-
-  /// List yang terlihat setelah filter & search diterapkan
-  late List<Expense> _visible;
+  /// Opsi kategori (selalu ambil dari service + prepend "Semua")
+  List<String> get _categoryOptions =>
+      ['Semua', ...svc.categories.map((c) => c.name)];
 
   @override
   void initState() {
     super.initState();
-    _selectedCategory = _categories.first; // 'Semua'
-    _selectedMonth = 0;
-    _selectedYear = 0;
-    _searchC.clear();
 
-    _visible = List.of(_expenses);
-    _applyFilter(); // render awal
+    // Dengarkan perubahan data di service → auto-refresh list & dropdown
+    svc.addListener(_onServiceChanged);
+
+    // Render awal
+    _applyFilter();
+  }
+
+  @override
+  void dispose() {
+    svc.removeListener(_onServiceChanged);
+    super.dispose();
+  }
+
+  void _onServiceChanged() {
+    if (!mounted) return;
+
+    // Jika kategori terpilih sudah tidak ada (hapus/rename), reset ke 'Semua'
+    if (!_categoryOptions.contains(_selectedCategory)) {
+      _selectedCategory = 'Semua';
+    }
+
+    setState(_applyFilter);
   }
 
   bool _isSemua(String v) => v.toLowerCase() == 'semua';
 
   // ----------------------------
-  // Inti filter terpadu (Latihan 4)
+  // Inti filter terpadu
   // ----------------------------
   void _applyFilter() {
-    List<Expense> current = List.of(_expenses);
+    // MULAI SELALU dari sumber data service
+    List<Expense> current = List.of(svc.expenses);
 
-    // Jika bulan & tahun dipilih bersamaan → pakai helper bulan&tahun
+    // Filter bulan & tahun
     if (_selectedMonth != 0 && _selectedYear != 0) {
       current = _getExpensesByMonth(current, _selectedMonth, _selectedYear);
     } else {
@@ -137,25 +79,28 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       }
     }
 
-    // Filter kategori (skip jika "Semua")
+    // Filter kategori (case-insensitive)
     if (!_isSemua(_selectedCategory)) {
-      current = current.where((e) => e.category == _selectedCategory).toList();
+      final sel = _selectedCategory.toLowerCase();
+      current = current.where((e) => e.category.toLowerCase() == sel).toList();
     }
 
-    // Pencarian teks (judul / deskripsi / kategori) — pakai helper
-    final q = _searchC.text.trim();
+    // Pencarian teks
+    final q = _searchC.text.trim().toLowerCase();
     if (q.isNotEmpty) {
-      current = _searchExpenses(current, q);
+      current = current.where((e) {
+        return e.title.toLowerCase().contains(q) ||
+            e.description.toLowerCase().contains(q) ||
+            e.category.toLowerCase().contains(q);
+      }).toList();
     }
 
-    setState(() => _visible = current);
+    _visible = current;
   }
 
   @override
   Widget build(BuildContext context) {
-    // ----------------------------
-    // Nilai terhitung (Latihan 3)
-    // ----------------------------
+    // Statistik (Latihan 3)
     final totalPerCategory = _getTotalByCategory(_visible);
     final highest = _getHighestExpense(_visible);
     final averageDaily = _getAverageDaily(_visible);
@@ -165,7 +110,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         title: const Text('Daftar Pengeluaran'),
         backgroundColor: Colors.blue,
         actions: [
-          // Latihan 5: tombol demo looping
           IconButton(
             tooltip: 'Demo Looping (Latihan 5)',
             icon: const Icon(Icons.calculate),
@@ -175,7 +119,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       ),
       body: Column(
         children: [
-          // --- Kolom pencarian ---
+          // --- Pencarian ---
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: TextField(
@@ -185,36 +129,40 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),
-              onChanged: (_) => _applyFilter(),
+              onChanged: (_) => setState(_applyFilter),
             ),
           ),
 
-          // --- Baris filter: Kategori / Bulan / Tahun ---
+          // --- Filter: Kategori / Bulan / Tahun ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Row(
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    initialValue: _selectedCategory,
+                    value: _categoryOptions.contains(_selectedCategory)
+                        ? _selectedCategory
+                        : 'Semua',
                     decoration: const InputDecoration(
                       labelText: 'Kategori',
                       border: OutlineInputBorder(),
                       isDense: true,
                     ),
-                    items: _categories
+                    items: _categoryOptions
                         .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                         .toList(),
                     onChanged: (v) {
-                      _selectedCategory = v ?? 'Semua';
-                      _applyFilter();
+                      setState(() {
+                        _selectedCategory = v ?? 'Semua';
+                        _applyFilter();
+                      });
                     },
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    initialValue: _selectedMonth,
+                    value: _selectedMonth,
                     decoration: const InputDecoration(
                       labelText: 'Bulan',
                       border: OutlineInputBorder(),
@@ -236,15 +184,17 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                       DropdownMenuItem(value: 12, child: Text('Des')),
                     ],
                     onChanged: (v) {
-                      _selectedMonth = v ?? 0;
-                      _applyFilter();
+                      setState(() {
+                        _selectedMonth = v ?? 0;
+                        _applyFilter();
+                      });
                     },
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    initialValue: _selectedYear,
+                    value: _selectedYear,
                     decoration: const InputDecoration(
                       labelText: 'Tahun',
                       border: OutlineInputBorder(),
@@ -257,8 +207,10 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                       DropdownMenuItem(value: 2025, child: Text('2025')),
                     ],
                     onChanged: (v) {
-                      _selectedYear = v ?? 0;
-                      _applyFilter();
+                      setState(() {
+                        _selectedYear = v ?? 0;
+                        _applyFilter();
+                      });
                     },
                   ),
                 ),
@@ -283,9 +235,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
                 Text(
-                  _formatCurrency(
-                    _visible.fold<double>(0, (s, e) => s + e.amount),
-                  ),
+                  'Rp ${_visible.fold<double>(0.0, (s, e) => s + e.amount).toStringAsFixed(0)}',
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -312,7 +262,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                   runSpacing: 6,
                   children: totalPerCategory.entries.map((e) {
                     return Chip(
-                      label: Text('${e.key}: ${_formatCurrency(e.value)}'),
+                      label: Text('${e.key}: Rp ${e.value.toStringAsFixed(0)}'),
                       backgroundColor: Colors.white,
                       side: BorderSide(color: Colors.blue.shade200),
                     );
@@ -337,7 +287,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Rata-rata Harian: ${_formatCurrency(averageDaily)}',
+                    'Rata-rata Harian: Rp ${averageDaily.toStringAsFixed(0)}',
                     style: const TextStyle(
                       fontSize: 13,
                       color: Colors.black87,
@@ -364,9 +314,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                         elevation: 2,
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: _getCategoryColor(expense.category),
+                            backgroundColor: categoryColor(expense.category),
                             child: Icon(
-                              _getCategoryIcon(expense.category),
+                              categoryIcon(expense.category),
                               color: Colors.white,
                               size: 20,
                             ),
@@ -410,11 +360,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
           ),
         ],
       ),
+
+      // FAB menuju AddExpenseScreen
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Fitur tambah pengeluaran segera hadir!')),
-          );
+        onPressed: () async {
+          final ok = await Navigator.pushNamed(context, '/add');
+          if (ok == true && mounted) setState(_applyFilter);
         },
         backgroundColor: Colors.blue,
         child: const Icon(Icons.add),
@@ -423,132 +374,95 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   }
 
   // ----------------------------
-  // Latihan 5: tampilkan hasil looping
+  // Latihan 5: demo looping
   // ----------------------------
   void _showLoopingDemo() {
-  final forIndex = LoopingExamples.totalForIndex(_visible);
-  final forIn = LoopingExamples.totalForIn(_visible);
-  final forEach = LoopingExamples.totalForEach(_visible);
-  final fold = LoopingExamples.totalFold(_visible);
-  final reduce = LoopingExamples.totalReduce(_visible);
+    final forIndex = LoopingExamples.totalForIndex(_visible);
+    final forIn = LoopingExamples.totalForIn(_visible);
+    final forEach = LoopingExamples.totalForEach(_visible);
+    final fold = LoopingExamples.totalFold(_visible);
+    final reduce = LoopingExamples.totalReduce(_visible);
 
-  // Controller untuk input ID
-  final TextEditingController idController = TextEditingController();
+    final TextEditingController idController = TextEditingController();
 
-  showDialog(
-    context: context,
-    builder: (_) {
-      // Variabel hasil pencarian
-      Expense? foundTraditional;
-      Expense? foundWhere;
+    showDialog(
+      context: context,
+      builder: (_) {
+        Expense? foundTraditional;
+        Expense? foundWhere;
 
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Latihan 5: Demo Looping & Pencarian'),
-            content: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('=== Total dengan Berbagai Cara ==='),
-                  Text('for (index): ${_formatCurrency(forIndex)}'),
-                  Text('for-in: ${_formatCurrency(forIn)}'),
-                  Text('forEach: ${_formatCurrency(forEach)}'),
-                  Text('fold: ${_formatCurrency(fold)}'),
-                  Text('reduce: ${_formatCurrency(reduce)}'),
-                  const SizedBox(height: 16),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Latihan 5: Demo Looping & Pencarian'),
+              content: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('=== Total dengan Berbagai Cara ==='),
+                    Text('for (index): Rp ${forIndex.toStringAsFixed(0)}'),
+                    Text('for-in: Rp ${forIn.toStringAsFixed(0)}'),
+                    Text('forEach: Rp ${forEach.toStringAsFixed(0)}'),
+                    Text('fold: Rp ${fold.toStringAsFixed(0)}'),
+                    Text('reduce: Rp ${reduce.toStringAsFixed(0)}'),
+                    const SizedBox(height: 16),
 
-                  const Text('=== Pencarian Data Berdasarkan ID ==='),
-                  TextField(
-                    controller: idController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Masukkan ID (contoh: 1, 2, 3...)',
-                      border: OutlineInputBorder(),
-                      isDense: true,
+                    const Text('=== Pencarian Data Berdasarkan ID ==='),
+                    TextField(
+                      controller: idController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Masukkan ID (contoh: 1, 2, 3...)',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      onChanged: (val) {
+                        setState(() {
+                          if (val.isNotEmpty) {
+                            foundTraditional =
+                                LoopingExamples.findExpenseTraditional(_visible, val);
+                            foundWhere =
+                                LoopingExamples.findExpenseWhere(_visible, val);
+                          } else {
+                            foundTraditional = null;
+                            foundWhere = null;
+                          }
+                        });
+                      },
                     ),
-                    onChanged: (val) {
-                      setState(() {
-                        if (val.isNotEmpty) {
-                          foundTraditional = LoopingExamples.findExpenseTraditional(_visible, val);
-                          foundWhere = LoopingExamples.findExpenseWhere(_visible, val);
-                        } else {
-                          foundTraditional = null;
-                          foundWhere = null;
-                        }
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  if (foundTraditional != null || foundWhere != null) ...[
-                    Text('Manual Loop: ${foundTraditional?.title ?? "Tidak ditemukan"}'),
-                    Text('firstWhere: ${foundWhere?.title ?? "Tidak ditemukan"}'),
+                    const SizedBox(height: 8),
+                    if (foundTraditional != null || foundWhere != null) ...[
+                      Text('Manual Loop: ${foundTraditional?.title ?? "Tidak ditemukan"}'),
+                      Text('firstWhere: ${foundWhere?.title ?? "Tidak ditemukan"}'),
+                    ],
+
+                    const SizedBox(height: 16),
+                    const Text('=== Filter Kategori "Transportasi" ==='),
+                    Text(
+                      'Manual: ${LoopingExamples.filterByCategoryManual(_visible, "Transportasi").length} item',
+                    ),
+                    Text(
+                      'where(): ${LoopingExamples.filterByCategoryWhere(_visible, "Transportasi").length} item',
+                    ),
                   ],
-
-                  const SizedBox(height: 16),
-                  const Text('=== Filter Kategori "Transportasi" ==='),
-                  Text(
-                    'Manual: ${LoopingExamples.filterByCategoryManual(_visible, "Transportasi").length} item',
-                  ),
-                  Text(
-                    'where(): ${LoopingExamples.filterByCategoryWhere(_visible, "Transportasi").length} item',
-                  ),
-                ],
+                ),
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Tutup'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
-
-
-  // ----------------------------
-  // Helper tampilan
-  // ----------------------------
-  String _formatCurrency(double value) => 'Rp ${value.toStringAsFixed(0)}';
-
-  Color _getCategoryColor(String category) {
-    switch (category.toLowerCase()) {
-      case 'makanan':
-        return Colors.orange;
-      case 'transportasi':
-        return Colors.green;
-      case 'utilitas':
-        return Colors.purple;
-      case 'hiburan':
-        return Colors.pink;
-      case 'pendidikan':
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Tutup'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'makanan':
-        return Icons.restaurant;
-      case 'transportasi':
-        return Icons.directions_car;
-      case 'utilitas':
-        return Icons.home;
-      case 'hiburan':
-        return Icons.movie;
-      case 'pendidikan':
-        return Icons.school;
-      default:
-        return Icons.attach_money;
-    }
-  }
-
+  // ----------------------------
+  // Helper tampilan & data (Latihan 3)
+  // ----------------------------
   void _showExpenseDetails(BuildContext context, Expense expense) {
     showDialog(
       context: context,
@@ -577,13 +491,10 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
   }
 
-  // ----------------------------
-  // Helper manipulasi data (Latihan 3)
-  // ----------------------------
   Map<String, double> _getTotalByCategory(List<Expense> list) {
     final map = <String, double>{};
     for (final e in list) {
-      map[e.category] = (map[e.category] ?? 0) + e.amount;
+      map[e.category] = (map[e.category] ?? 0.0) + e.amount;
     }
     return map;
   }
@@ -597,20 +508,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     return list.where((e) => e.date.month == month && e.date.year == year).toList();
   }
 
-  List<Expense> _searchExpenses(List<Expense> list, String keyword) {
-    final q = keyword.toLowerCase();
-    return list.where((e) {
-      return e.title.toLowerCase().contains(q) ||
-          e.description.toLowerCase().contains(q) ||
-          e.category.toLowerCase().contains(q);
-    }).toList();
-  }
-
   double _getAverageDaily(List<Expense> list) {
-    if (list.isEmpty) return 0;
-    final total = list.fold<double>(0, (sum, e) => sum + e.amount);
+    if (list.isEmpty) return 0.0;
+    final total = list.fold<double>(0.0, (sum, e) => sum + e.amount);
     final uniqueDays =
         list.map((e) => '${e.date.year}-${e.date.month}-${e.date.day}').toSet().length;
-    return uniqueDays == 0 ? 0 : total / uniqueDays;
+    return uniqueDays == 0 ? 0.0 : total / uniqueDays;
   }
 }
