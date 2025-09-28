@@ -3,6 +3,7 @@ import '../models/expense.dart';
 import '../services/expense_service.dart';
 import '../utils/looping_examples.dart';
 import '../utils/category_style.dart';
+import '../utils/export_utils.dart';
 
 class ExpenseListScreen extends StatefulWidget {
   const ExpenseListScreen({super.key});
@@ -12,62 +13,45 @@ class ExpenseListScreen extends StatefulWidget {
 }
 
 class _ExpenseListScreenState extends State<ExpenseListScreen> {
-  // Sumber data tunggal
   final ExpenseService svc = ExpenseService.instance;
 
-  // ----------------------------
   // Pencarian & Filter
-  // ----------------------------
   final TextEditingController _searchC = TextEditingController();
-  String _selectedCategory = 'Semua'; // default
-  int _selectedMonth = 0;             // 0 = Semua bulan
-  int _selectedYear = 0;              // 0 = Semua tahun
+  String _selectedCategory = 'Semua';
+  int _selectedMonth = 0; // 0 = Semua bulan
+  int _selectedYear = 0;  // 0 = Semua tahun
 
-  /// Data yang ditampilkan setelah filter & search
   List<Expense> _visible = const [];
 
-  /// Opsi kategori (selalu ambil dari service + prepend "Semua")
-  List<String> get _categoryOptions =>
-      ['Semua', ...svc.categories.map((c) => c.name)];
+  List<String> get _categoryOptions => ['Semua', ...svc.categories.map((c) => c.name)];
 
   @override
   void initState() {
     super.initState();
-
-    // Dengarkan perubahan data di service → auto-refresh list & dropdown
     svc.addListener(_onServiceChanged);
-
-    // Render awal
     _applyFilter();
   }
 
   @override
   void dispose() {
     svc.removeListener(_onServiceChanged);
+    _searchC.dispose();
     super.dispose();
   }
 
   void _onServiceChanged() {
     if (!mounted) return;
-
-    // Jika kategori terpilih sudah tidak ada (hapus/rename), reset ke 'Semua'
     if (!_categoryOptions.contains(_selectedCategory)) {
       _selectedCategory = 'Semua';
     }
-
     setState(_applyFilter);
   }
 
   bool _isSemua(String v) => v.toLowerCase() == 'semua';
 
-  // ----------------------------
-  // Inti filter terpadu
-  // ----------------------------
   void _applyFilter() {
-    // MULAI SELALU dari sumber data service
     List<Expense> current = List.of(svc.expenses);
 
-    // Filter bulan & tahun
     if (_selectedMonth != 0 && _selectedYear != 0) {
       current = _getExpensesByMonth(current, _selectedMonth, _selectedYear);
     } else {
@@ -79,19 +63,17 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       }
     }
 
-    // Filter kategori (case-insensitive)
     if (!_isSemua(_selectedCategory)) {
       final sel = _selectedCategory.toLowerCase();
       current = current.where((e) => e.category.toLowerCase() == sel).toList();
     }
 
-    // Pencarian teks
     final q = _searchC.text.trim().toLowerCase();
     if (q.isNotEmpty) {
       current = current.where((e) {
         return e.title.toLowerCase().contains(q) ||
-            e.description.toLowerCase().contains(q) ||
-            e.category.toLowerCase().contains(q);
+               e.description.toLowerCase().contains(q) ||
+               e.category.toLowerCase().contains(q);
       }).toList();
     }
 
@@ -100,16 +82,26 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Statistik (Latihan 3)
     final totalPerCategory = _getTotalByCategory(_visible);
     final highest = _getHighestExpense(_visible);
-    final averageDaily = _getAverageDaily(_visible);
+    final averageDaily = _getAverageDaily(_visible); // <- dipakai di UI
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Daftar Pengeluaran'),
         backgroundColor: Colors.blue,
         actions: [
+          IconButton(
+            tooltip: 'Export PDF (sesuai filter)',
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: () async {
+              await ExportPdf.exportFromList(_visible, filename: 'expenses_filtered.pdf');
+              if (!mounted) return; // <- guard setelah await
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('PDF (filtered) siap. Silakan simpan/print.')),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'Demo Looping (Latihan 5)',
             icon: const Icon(Icons.calculate),
@@ -119,7 +111,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       ),
       body: Column(
         children: [
-          // --- Pencarian ---
+          // Pencarian
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: TextField(
@@ -133,14 +125,15 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             ),
           ),
 
-          // --- Filter: Kategori / Bulan / Tahun ---
+          // Filter: Kategori / Bulan / Tahun
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Row(
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _categoryOptions.contains(_selectedCategory)
+                    // FIX: value -> initialValue
+                    initialValue: _categoryOptions.contains(_selectedCategory)
                         ? _selectedCategory
                         : 'Semua',
                     decoration: const InputDecoration(
@@ -162,7 +155,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    value: _selectedMonth,
+                    // FIX: value -> initialValue
+                    initialValue: _selectedMonth,
                     decoration: const InputDecoration(
                       labelText: 'Bulan',
                       border: OutlineInputBorder(),
@@ -194,7 +188,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    value: _selectedYear,
+                    // FIX: value -> initialValue
+                    initialValue: _selectedYear,
                     decoration: const InputDecoration(
                       labelText: 'Tahun',
                       border: OutlineInputBorder(),
@@ -218,22 +213,18 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             ),
           ),
 
-          // --- Header + statistik ---
+          // Header + statistik
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.blue.shade50,
-              border: Border(
-                bottom: BorderSide(color: Colors.blue.shade200),
-              ),
+              border: Border(bottom: BorderSide(color: Colors.blue.shade200)),
             ),
             child: Column(
               children: [
-                Text(
-                  'Total Pengeluaran',
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                ),
+                Text('Total Pengeluaran',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600])),
                 Text(
                   'Rp ${_visible.fold<double>(0.0, (s, e) => s + e.amount).toStringAsFixed(0)}',
                   style: const TextStyle(
@@ -260,15 +251,14 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 6,
-                  children: totalPerCategory.entries.map((e) {
-                    return Chip(
-                      label: Text('${e.key}: Rp ${e.value.toStringAsFixed(0)}'),
-                      backgroundColor: Colors.white,
-                      side: BorderSide(color: Colors.blue.shade200),
-                    );
-                  }).toList(),
+                  children: totalPerCategory.entries
+                      .map((e) => Chip(
+                            label: Text('${e.key}: Rp ${e.value.toStringAsFixed(0)}'),
+                            backgroundColor: Colors.white,
+                            side: BorderSide(color: Colors.blue.shade200),
+                          ))
+                      .toList(),
                 ),
-
                 const SizedBox(height: 8),
 
                 if (highest != null)
@@ -287,6 +277,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
+                    // FIX: pakai variabel averageDaily
                     'Rata-rata Harian: Rp ${averageDaily.toStringAsFixed(0)}',
                     style: const TextStyle(
                       fontSize: 13,
@@ -299,7 +290,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             ),
           ),
 
-          // --- List pengeluaran ---
+          // List
           Expanded(
             child: _visible.isEmpty
                 ? const Center(child: Text('Tidak ada data sesuai filter.'))
@@ -309,8 +300,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                     itemBuilder: (context, index) {
                       final expense = _visible[index];
                       return Card(
-                        margin:
-                            const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         elevation: 2,
                         child: ListTile(
                           leading: CircleAvatar(
@@ -330,17 +320,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                             children: [
                               Text(
                                 expense.category,
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                ),
+                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
                               ),
                               Text(
                                 expense.formattedDate,
-                                style: TextStyle(
-                                  color: Colors.grey[500],
-                                  fontSize: 11,
-                                ),
+                                style: TextStyle(color: Colors.grey[500], fontSize: 11),
                               ),
                             ],
                           ),
@@ -361,11 +345,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         ],
       ),
 
-      // FAB menuju AddExpenseScreen
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final ok = await Navigator.pushNamed(context, '/add');
-          if (ok == true && mounted) setState(_applyFilter);
+          if (!mounted) return;            // <- guard setelah await
+          if (ok == true) setState(_applyFilter);
         },
         backgroundColor: Colors.blue,
         child: const Icon(Icons.add),
@@ -373,9 +357,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
   }
 
-  // ----------------------------
-  // Latihan 5: demo looping
-  // ----------------------------
+  // Latihan 5 demo
   void _showLoopingDemo() {
     final forIndex = LoopingExamples.totalForIndex(_visible);
     final forIn = LoopingExamples.totalForIn(_visible);
@@ -391,78 +373,71 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         Expense? foundTraditional;
         Expense? foundWhere;
 
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Latihan 5: Demo Looping & Pencarian'),
-              content: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('=== Total dengan Berbagai Cara ==='),
-                    Text('for (index): Rp ${forIndex.toStringAsFixed(0)}'),
-                    Text('for-in: Rp ${forIn.toStringAsFixed(0)}'),
-                    Text('forEach: Rp ${forEach.toStringAsFixed(0)}'),
-                    Text('fold: Rp ${fold.toStringAsFixed(0)}'),
-                    Text('reduce: Rp ${reduce.toStringAsFixed(0)}'),
-                    const SizedBox(height: 16),
+        return StatefulBuilder(builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Latihan 5: Demo Looping & Pencarian'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('=== Total dengan Berbagai Cara ==='),
+                  Text('for (index): Rp ${forIndex.toStringAsFixed(0)}'),
+                  Text('for-in: Rp ${forIn.toStringAsFixed(0)}'),
+                  Text('forEach: Rp ${forEach.toStringAsFixed(0)}'),
+                  Text('fold: Rp ${fold.toStringAsFixed(0)}'),
+                  Text('reduce: Rp ${reduce.toStringAsFixed(0)}'),
+                  const SizedBox(height: 16),
 
-                    const Text('=== Pencarian Data Berdasarkan ID ==='),
-                    TextField(
-                      controller: idController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Masukkan ID (contoh: 1, 2, 3...)',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      onChanged: (val) {
-                        setState(() {
-                          if (val.isNotEmpty) {
-                            foundTraditional =
-                                LoopingExamples.findExpenseTraditional(_visible, val);
-                            foundWhere =
-                                LoopingExamples.findExpenseWhere(_visible, val);
-                          } else {
-                            foundTraditional = null;
-                            foundWhere = null;
-                          }
-                        });
-                      },
+                  const Text('=== Pencarian Data Berdasarkan ID ==='),
+                  TextField(
+                    controller: idController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Masukkan ID (contoh: 1, 2, 3...)',
+                      border: OutlineInputBorder(),
+                      isDense: true,
                     ),
-                    const SizedBox(height: 8),
-                    if (foundTraditional != null || foundWhere != null) ...[
-                      Text('Manual Loop: ${foundTraditional?.title ?? "Tidak ditemukan"}'),
-                      Text('firstWhere: ${foundWhere?.title ?? "Tidak ditemukan"}'),
-                    ],
-
-                    const SizedBox(height: 16),
-                    const Text('=== Filter Kategori "Transportasi" ==='),
-                    Text(
-                      'Manual: ${LoopingExamples.filterByCategoryManual(_visible, "Transportasi").length} item',
-                    ),
-                    Text(
-                      'where(): ${LoopingExamples.filterByCategoryWhere(_visible, "Transportasi").length} item',
-                    ),
+                    onChanged: (val) {
+                      setState(() {
+                        if (val.isNotEmpty) {
+                          foundTraditional =
+                              LoopingExamples.findExpenseTraditional(_visible, val);
+                          foundWhere =
+                              LoopingExamples.findExpenseWhere(_visible, val);
+                        } else {
+                          foundTraditional = null;
+                          foundWhere = null;
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  if (foundTraditional != null || foundWhere != null) ...[
+                    Text('Manual Loop: ${foundTraditional?.title ?? "Tidak ditemukan"}'),
+                    Text('firstWhere: ${foundWhere?.title ?? "Tidak ditemukan"}'),
                   ],
-                ),
+
+                  const SizedBox(height: 16),
+                  const Text('=== Filter Kategori "Transportasi" ==='),
+                  Text(
+                    'Manual: ${LoopingExamples.filterByCategoryManual(_visible, "Transportasi").length} item',
+                  ),
+                  Text(
+                    'where(): ${LoopingExamples.filterByCategoryWhere(_visible, "Transportasi").length} item',
+                  ),
+                ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Tutup'),
-                ),
-              ],
-            );
-          },
-        );
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tutup')),
+            ],
+          );
+        });
       },
     );
   }
 
-  // ----------------------------
-  // Helper tampilan & data (Latihan 3)
-  // ----------------------------
+  // Helpers
   void _showExpenseDetails(BuildContext context, Expense expense) {
     showDialog(
       context: context,
@@ -482,10 +457,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tutup'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tutup')),
         ],
       ),
     );

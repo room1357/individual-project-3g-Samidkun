@@ -3,6 +3,7 @@ import 'login_screen.dart';
 import 'expense_list_screen.dart';
 import '../services/expense_service.dart';
 import '../utils/currency_utils.dart';
+import '../utils/export_utils.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -61,56 +62,94 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Grid menu Proyek 1
+            // Grid menu
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
                 children: [
                   // 1) Expenses (daftar + edit dari screen kamu)
-                  _buildDashboardCard('Expenses', Icons.attach_money, Colors.green, () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ExpenseListScreen()),
-                    );
-                  }),
+                  _buildDashboardCard(
+                    'Expenses',
+                    Icons.attach_money,
+                    Colors.green,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ExpenseListScreen(),
+                        ),
+                      );
+                    },
+                  ),
 
                   // 2) Add Expense
-                  _buildDashboardCard('Add Expense', Icons.add_circle, Colors.teal, () async {
-                    final ok = await Navigator.pushNamed(context, '/add');
-                    if (ok == true && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Pengeluaran ditambahkan')),
-                      );
-                    }
-                  }),
+                  _buildDashboardCard(
+                    'Add Expense',
+                    Icons.add_circle,
+                    Colors.teal,
+                    () async {
+                      final ok = await Navigator.pushNamed(context, '/add');
+                      if (ok == true && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Pengeluaran ditambahkan'),
+                          ),
+                        );
+                      }
+                    },
+                  ),
 
                   // 3) Categories (kelola kategori)
-                  _buildDashboardCard('Categories', Icons.category, Colors.indigo, () {
-                    Navigator.pushNamed(context, '/categories');
-                  }),
+                  _buildDashboardCard(
+                    'Categories',
+                    Icons.category,
+                    Colors.indigo,
+                    () {
+                      Navigator.pushNamed(context, '/categories');
+                    },
+                  ),
 
                   // 4) Statistics (grafik & ringkasan)
-                  _buildDashboardCard('Statistics', Icons.bar_chart, Colors.orange, () {
-                    Navigator.pushNamed(context, '/stats');
-                  }),
+                  _buildDashboardCard(
+                    'Statistics',
+                    Icons.bar_chart,
+                    Colors.orange,
+                    () {
+                      Navigator.pushNamed(context, '/stats');
+                    },
+                  ),
 
-                  // 5) (Opsional) Export CSV — aktifkan jika sudah bikin util-nya
-                  // _buildDashboardCard('Export CSV', Icons.download, Colors.brown, () async {
-                  //   await ExportUtils.exportCsv('expenses.csv');
-                  //   if (!context.mounted) return;
-                  //   ScaffoldMessenger.of(context).showSnackBar(
-                  //     const SnackBar(content: Text('CSV diekspor (Web: diunduh).')),
-                  //   );
-                  // }),
+                  // 5) Export PDF (baru)
+                  _buildDashboardCard(
+                    'Export PDF',
+                    Icons.picture_as_pdf,
+                    Colors.red,
+                    () async {
+                      await ExportPdf.exportAll(filename: 'expenses.pdf');
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('PDF diekspor. Silakan simpan/print.'),
+                        ),
+                      );
+                    },
+                  ),
 
-                  // Placeholder Setting (boleh dihapus kalau tidak dipakai)
-                  _buildDashboardCard('Setting', Icons.settings, Colors.purple, () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Feature Setting coming soon!')),
-                    );
-                  }),
+                  // 6) Setting (placeholder)
+                  _buildDashboardCard(
+                    'Setting',
+                    Icons.settings,
+                    Colors.purple,
+                    () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Feature Setting coming soon!'),
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
