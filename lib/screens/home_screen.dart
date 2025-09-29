@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
-import 'expense_list_screen.dart';
 import '../services/expense_service.dart';
 import '../utils/currency_utils.dart';
-import '../utils/export_utils.dart';
+import 'login_screen.dart';
+import 'expense_list_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -20,177 +19,137 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             tooltip: 'Logout',
             onPressed: () {
-              // Logout: kembali ke Login dan hapus semua route sebelumnya
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false,
+                (_) => false,
               );
             },
             icon: const Icon(Icons.logout),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header + Total
-            const Text(
-              'Dashboard',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              elevation: 2,
-              child: ListTile(
-                title: const Text('Total Pengeluaran'),
-                subtitle: const Text('Semua kategori & bulan'),
-                trailing: Text(
-                  rp(svc.totalAll),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
 
-            // Grid menu
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                children: [
-                  // 1) Expenses (daftar + edit dari screen kamu)
-                  _buildDashboardCard(
-                    'Expenses',
-                    Icons.attach_money,
-                    Colors.green,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ExpenseListScreen(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // 2) Add Expense
-                  _buildDashboardCard(
-                    'Add Expense',
-                    Icons.add_circle,
-                    Colors.teal,
-                    () async {
-                      final ok = await Navigator.pushNamed(context, '/add');
-                      if (ok == true && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Pengeluaran ditambahkan'),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-
-                  // 3) Categories (kelola kategori)
-                  _buildDashboardCard(
-                    'Categories',
-                    Icons.category,
-                    Colors.indigo,
-                    () {
-                      Navigator.pushNamed(context, '/categories');
-                    },
-                  ),
-
-                  // 4) Statistics (grafik & ringkasan)
-                  _buildDashboardCard(
-                    'Statistics',
-                    Icons.bar_chart,
-                    Colors.orange,
-                    () {
-                      Navigator.pushNamed(context, '/stats');
-                    },
-                  ),
-
-                  // 5) Export PDF (baru)
-                  _buildDashboardCard(
-                    'Export PDF',
-                    Icons.picture_as_pdf,
-                    Colors.red,
-                    () async {
-                      await ExportPdf.exportAll(filename: 'expenses.pdf');
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('PDF diekspor. Silakan simpan/print.'),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // 6) Setting (placeholder)
-                  _buildDashboardCard(
-                    'Setting',
-                    Icons.settings,
-                    Colors.purple,
-                    () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Feature Setting coming soon!'),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDashboardCard(
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback? onTap,
-  ) {
-    return Card(
-      elevation: 4,
-      child: Builder(
-        builder: (context) => InkWell(
-          onTap: onTap ??
-              () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Feature $title coming soon!')),
-                );
-              },
-          child: Container(
+      // 🔽 KUNCI-NYA DI SINI: AnimatedBuilder akan rebuild
+      // tiap kali ExpenseService (ChangeNotifier) memanggil notifyListeners().
+      body: AnimatedBuilder(
+        animation: svc,
+        builder: (context, _) {
+          final total = svc.totalAll; // selalu nilai terbaru
+          return Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(icon, size: 48, color: color),
-                const SizedBox(height: 12),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
+                const Text(
+                  'Dashboard',
+                  style: TextStyle(
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  elevation: 2,
+                  child: ListTile(
+                    title: const Text('Total Pengeluaran'),
+                    subtitle: const Text('Semua kategori & bulan'),
+                    trailing: Text(
+                      rp(total), // <- sekarang ikut berubah
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                Expanded(
+                  child: GridView.count(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    children: [
+                      _card(
+                        context,
+                        'Expenses',
+                        Icons.attach_money,
+                        Colors.green,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ExpenseListScreen(),
+                          ),
+                        ),
+                      ),
+                      _card(
+                        context,
+                        'Add Expense',
+                        Icons.add_circle,
+                        Colors.teal,
+                        () async {
+                          final ok = await Navigator.pushNamed(context, '/add');
+                          if (ok == true && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Pengeluaran ditambahkan'),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      _card(
+                        context,
+                        'Categories',
+                        Icons.category,
+                        Colors.indigo,
+                        () => Navigator.pushNamed(context, '/categories'),
+                      ),
+                      _card(
+                        context,
+                        'Statistics',
+                        Icons.bar_chart,
+                        Colors.orange,
+                        () => Navigator.pushNamed(context, '/stats'),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _card(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return Card(
+      elevation: 4,
+      child: InkWell(
+        onTap: onTap,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 48, color: color),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
         ),
       ),

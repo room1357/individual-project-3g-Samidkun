@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/expense.dart';
 import '../models/category.dart';
 import 'storage_service.dart';
+import 'auth_service.dart';
 
 class ExpenseService extends ChangeNotifier {
   ExpenseService._();
@@ -9,112 +10,154 @@ class ExpenseService extends ChangeNotifier {
 
   final StorageService _storage = InMemoryStorageService();
 
-  List<Expense> _expenses = [];
-  List<CategoryModel> _categories = [];
+  List<Expense> _allExpenses = [];
+  List<CategoryModel> _allCategories = [];
 
-  List<Expense> get expenses => List.unmodifiable(_expenses);
-  List<CategoryModel> get categories => List.unmodifiable(_categories);
+  /// Gunakan ID user (String), bukan AppUser.
+  String? get _uid => AuthService.instance.currentUser?.id;
+
+  // ----------------------------
+  // Data yang terlihat oleh user aktif
+  // ----------------------------
+  List<Expense> get expenses {
+    final uid = _uid;
+    if (uid == null) return const [];
+    return _allExpenses.where((e) => e.ownerId == uid).toList(growable: false);
+  }
+
+  List<CategoryModel> get categories {
+    final uid = _uid;
+    if (uid == null) return const [];
+    return _allCategories
+        .where((c) => c.ownerId == 'global' || c.ownerId == uid)
+        .toList(growable: false);
+  }
 
   Future<void> loadInitialData() async {
-    _expenses = await _storage.loadExpenses();
-    _categories = await _storage.loadCategories();
+    _allExpenses = await _storage.loadExpenses();
+    _allCategories = await _storage.loadCategories();
     notifyListeners();
   }
 
-  // ---------- Expense CRUD ----------
+  // ----------------------------
+  // Expense CRUD
+  // ----------------------------
   void addExpense(Expense e) {
-    _expenses.add(e);
-    _storage.saveExpenses(_expenses);
+    final uid = _uid;
+    if (uid == null) return;
+
+    final withOwner = (e.ownerId == uid) ? e : e.copyWith(ownerId: uid);
+    _allExpenses.add(withOwner);
+    _storage.saveExpenses(_allExpenses);
     notifyListeners();
   }
 
   void updateExpense(Expense e) {
-    final i = _expenses.indexWhere((x) => x.id == e.id);
+    final i = _allExpenses.indexWhere((x) => x.id == e.id);
     if (i != -1) {
-      _expenses[i] = e;
-      _storage.saveExpenses(_expenses);
+      _allExpenses[i] = e;
+      _storage.saveExpenses(_allExpenses);
       notifyListeners();
     }
   }
 
   void deleteExpense(String id) {
-    _expenses.removeWhere((x) => x.id == id);
-    _storage.saveExpenses(_expenses);
+    _allExpenses.removeWhere((x) => x.id == id);
+    _storage.saveExpenses(_allExpenses);
     notifyListeners();
   }
 
-  /// Ambil data berdasarkan id. Mengembalikan null jika tidak ditemukan.
   Expense? getById(String id) {
+    final uid = _uid;
+    if (uid == null) return null;
     try {
-      return _expenses.firstWhere((e) => e.id == id);
+      return _allExpenses.firstWhere((e) => e.id == id && e.ownerId == uid);
     } catch (_) {
       return null;
     }
   }
 
-  // ---------- Category management ----------
+  // ----------------------------
+  // Category management
+  // ----------------------------
   bool addCategory(String name) {
+    final uid = _uid;
+    if (uid == null) return false;
+
     final n = name.trim();
     if (n.isEmpty) return false;
-    if (_categories.any((c) => c.name.toLowerCase() == n.toLowerCase())) return false;
+
+    final exists = _allCategories.any((c) =>
+        (c.ownerId == 'global' || c.ownerId == uid) &&
+        c.name.toLowerCase() == n.toLowerCase());
+    if (exists) return false;
+
     final id = DateTime.now().millisecondsSinceEpoch.toString();
-    _categories.add(CategoryModel(id: id, name: n));
-    _storage.saveCategories(_categories);
+    _allCategories.add(CategoryModel(id: id, name: n, ownerId: uid));
+    _storage.saveCategories(_allCategories);
     notifyListeners();
     return true;
   }
 
   bool renameCategory(String id, String newName) {
+    final uid = _uid;
+    if (uid == null) return false;
+
     final n = newName.trim();
     if (n.isEmpty) return false;
-    if (_categories.any((c) => c.name.toLowerCase() == n.toLowerCase())) return false;
-    final idx = _categories.indexWhere((c) => c.id == id);
+
+    final dup = _allCategories.any((c) =>
+        (c.ownerId == 'global' || c.ownerId == uid) &&
+        c.name.toLowerCase() == n.toLowerCase());
+    if (dup) return false;
+
+    final idx = _allCategories.indexWhere((c) => c.id == id && c.ownerId == uid);
     if (idx == -1) return false;
 
-    // update kategori
-    final oldName = _categories[idx].name;
-    _categories[idx] = CategoryModel(id: id, name: n);
+    final oldName = _allCategories[idx].name;
+    _allCategories[idx] = CategoryModel(id: id, name: n, ownerId: uid);
 
-    // migrasi semua expense yang pakai kategori lama
-    for (int i = 0; i < _expenses.length; i++) {
-      if (_expenses[i].category == oldName) {
-        _expenses[i] = Expense(
-          id: _expenses[i].id,
-          title: _expenses[i].title,
-          amount: _expenses[i].amount,
-          category: n,
-          date: _expenses[i].date,
-          description: _expenses[i].description,
-        );
+    for (int i = 0; i < _allExpenses.length; i++) {
+      final e = _allExpenses[i];
+      if (e.ownerId == uid && e.category == oldName) {
+        _allExpenses[i] = e.copyWith(category: n);
       }
     }
 
-    _storage.saveCategories(_categories);
-    _storage.saveExpenses(_expenses);
+    _storage.saveCategories(_allCategories);
+    _storage.saveExpenses(_allExpenses);
     notifyListeners();
     return true;
   }
 
   bool deleteCategory(String id) {
-    final cat = _categories.firstWhere(
-      (c) => c.id == id,
-      orElse: () => CategoryModel(id: '', name: ''),
+    final uid = _uid;
+    if (uid == null) return false;
+
+    final cat = _allCategories.firstWhere(
+      (c) => c.id == id && c.ownerId == uid,
+      orElse: () => CategoryModel(id: '', name: '', ownerId: ''),
     );
     if (cat.id.isEmpty) return false;
-    final inUse = _expenses.any((e) => e.category == cat.name);
+
+    final inUse =
+        _allExpenses.any((e) => e.ownerId == uid && e.category == cat.name);
     if (inUse) return false;
-    _categories.removeWhere((c) => c.id == id);
-    _storage.saveCategories(_categories);
+
+    _allCategories.removeWhere((c) => c.id == id && c.ownerId == uid);
+    _storage.saveCategories(_allCategories);
     notifyListeners();
     return true;
   }
 
-  // ---------- Stats ----------
-  double get totalAll => _expenses.fold(0.0, (s, e) => s + e.amount);
+  // ----------------------------
+  // Stats
+  // ----------------------------
+  double get totalAll => expenses.fold(0.0, (s, e) => s + e.amount);
 
   Map<String, double> get totalPerCategory {
     final map = <String, double>{};
-    for (final e in _expenses) {
+    for (final e in expenses) {
       map[e.category] = (map[e.category] ?? 0.0) + e.amount;
     }
     return map;
@@ -122,7 +165,7 @@ class ExpenseService extends ChangeNotifier {
 
   Map<int, double> get totalPerMonth {
     final map = <int, double>{};
-    for (final e in _expenses) {
+    for (final e in expenses) {
       map[e.date.month] = (map[e.date.month] ?? 0.0) + e.amount;
     }
     return map;

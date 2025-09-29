@@ -1,31 +1,31 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final id = AuthService.instance.currentUser ?? '(not signed in)';
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        backgroundColor: Colors.blue,
-      ),
-      body: Center(
+      appBar: AppBar(title: const Text('Profile')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const CircleAvatar(
-              radius: 50,
-              child: Icon(Icons.person, size: 50),
-            ),
-            const SizedBox(height: 20),
-            const Text('Nama Pengguna', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            const Text('user@email.com', style: TextStyle(fontSize: 16, color: Colors.grey)),
-            const SizedBox(height: 30),
+            Text('User ID: $id'),
+            const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-              child: const Text('Kembali'),
+              onPressed: () async {
+                AuthService.instance.updateProfile(displayName: 'Demo');
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Profile updated (demo).')),
+                );
+              },
+              child: const Text('Update Profile (Demo)'),
             ),
           ],
         ),

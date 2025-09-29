@@ -1,94 +1,84 @@
 import 'package:flutter/material.dart';
-import 'register_screen.dart';
+import '../services/auth_service.dart';
 import 'home_screen.dart';
+import 'register_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _emailC = TextEditingController();
+  final _passC  = TextEditingController();
+  bool _loading = false;
+
+  Future<void> _doLogin() async {
+    setState(() => _loading = true);
+    final ok = AuthService.instance.login(
+      email: _emailC.text,
+      password: _passC.text,
+    );
+    setState(() => _loading = false);
+
+    if (!mounted) return;
+    if (ok) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email atau password salah')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('ENTER'),
-        backgroundColor: Colors.blue,
-      ),
+      appBar: AppBar(title: const Text('Login')),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo aplikasi
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.person, size: 50, color: Colors.white),
-            ),
-            SizedBox(height: 32),
-
-            // Field username
             TextField(
-              decoration: InputDecoration(
-                labelText: 'Username',
+              controller: _emailC,
+              decoration: const InputDecoration(
+                labelText: 'Email',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.person),
               ),
             ),
-            SizedBox(height: 16),
-
-            // Field password
+            const SizedBox(height: 12),
             TextField(
+              controller: _passC,
               obscureText: true,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Password',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
               ),
             ),
-            SizedBox(height: 24),
-
-            // Tombol login
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // Navigasi ke HomeScreen dengan pushReplacement
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomeScreen()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: Text(
-                  'ENTER',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                onPressed: _loading ? null : _doLogin,
+                child: _loading
+                    ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('Login'),
               ),
             ),
-            SizedBox(height: 16),
-
-            // Link ke halaman register
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text("Don't have an account yet? "),
-                TextButton(
-                  onPressed: () {
-                    // Navigasi ke RegisterScreen dengan push
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const RegisterScreen()),
-                    );
-                  },
-                  child: Text('Register'),
-                ),
-              ],
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                );
+              },
+              child: const Text('Belum punya akun? Register'),
             ),
           ],
         ),
