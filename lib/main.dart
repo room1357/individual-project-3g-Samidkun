@@ -6,6 +6,7 @@ import 'screens/add_expense_screen.dart';
 import 'screens/edit_expense_screen.dart';
 import 'screens/category_screen.dart';
 import 'screens/statistics_screen.dart';
+import 'screens/profile_screen.dart';
 
 import 'services/expense_service.dart';
 import 'models/expense.dart';
@@ -28,7 +29,7 @@ class MyApp extends StatelessWidget {
 
       // Halaman pertama
       home: const LoginScreen(),
-
+      debugShowCheckedModeBanner: false,
       // Route statis yang tidak butuh argumen
       routes: {
         '/home': (_) => const HomeScreen(),
@@ -36,6 +37,7 @@ class MyApp extends StatelessWidget {
         '/add': (_) => const AddExpenseScreen(),
         '/categories': (_) => const CategoryScreen(),
         '/stats': (_) => const StatisticsScreen(),
+        '/profile': (_) => const ProfileScreen(),
       },
 
       // Route dinamis: /edit

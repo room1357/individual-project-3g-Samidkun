@@ -19,11 +19,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   final TextEditingController _searchC = TextEditingController();
   String _selectedCategory = 'Semua';
   int _selectedMonth = 0; // 0 = Semua bulan
-  int _selectedYear = 0;  // 0 = Semua tahun
+  int _selectedYear = 0; // 0 = Semua tahun
 
   List<Expense> _visible = const [];
 
-  List<String> get _categoryOptions => ['Semua', ...svc.categories.map((c) => c.name)];
+  List<String> get _categoryOptions =>
+      ['Semua', ...svc.categories.map((c) => c.name)];
 
   @override
   void initState() {
@@ -72,8 +73,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     if (q.isNotEmpty) {
       current = current.where((e) {
         return e.title.toLowerCase().contains(q) ||
-               e.description.toLowerCase().contains(q) ||
-               e.category.toLowerCase().contains(q);
+            e.description.toLowerCase().contains(q) ||
+            e.category.toLowerCase().contains(q);
       }).toList();
     }
 
@@ -84,7 +85,10 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   Widget build(BuildContext context) {
     final totalPerCategory = _getTotalByCategory(_visible);
     final highest = _getHighestExpense(_visible);
-    final averageDaily = _getAverageDaily(_visible); // <- dipakai di UI
+    final averageDaily = _getAverageDaily(_visible);
+
+    // Map kategori -> CategoryModel buat ambil iconKey / colorHex
+    // final catMap = { for (final c in svc.categories) c.name.toLowerCase(): c };
 
     return Scaffold(
       appBar: AppBar(
@@ -95,10 +99,14 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             tooltip: 'Export PDF (sesuai filter)',
             icon: const Icon(Icons.picture_as_pdf),
             onPressed: () async {
-              await ExportPdf.exportFromList(_visible, filename: 'expenses_filtered.pdf');
-              if (!mounted) return; // <- guard setelah await
+              await ExportPdf.exportFromList(_visible,
+                  filename: 'expenses_filtered.pdf');
+              if (!mounted) return;
+              // ignore: use_build_context_synchronously
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('PDF (filtered) siap. Silakan simpan/print.')),
+                const SnackBar(
+                    content:
+                        Text('PDF (filtered) siap. Silakan simpan/print.')),
               );
             },
           ),
@@ -132,7 +140,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    // FIX: value -> initialValue
                     initialValue: _categoryOptions.contains(_selectedCategory)
                         ? _selectedCategory
                         : 'Semua',
@@ -155,7 +162,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    // FIX: value -> initialValue
                     initialValue: _selectedMonth,
                     decoration: const InputDecoration(
                       labelText: 'Bulan',
@@ -188,7 +194,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    // FIX: value -> initialValue
                     initialValue: _selectedYear,
                     decoration: const InputDecoration(
                       labelText: 'Tahun',
@@ -248,17 +253,20 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 ),
                 const SizedBox(height: 6),
 
+                // Chip pakai warna preferensi kategori
                 Wrap(
                   spacing: 8,
                   runSpacing: 6,
-                  children: totalPerCategory.entries
-                      .map((e) => Chip(
-                            label: Text('${e.key}: Rp ${e.value.toStringAsFixed(0)}'),
-                            backgroundColor: Colors.white,
-                            side: BorderSide(color: Colors.blue.shade200),
-                          ))
-                      .toList(),
+                  children: totalPerCategory.entries.map((e) {
+                    final col = colorOf(e.key);
+                    return Chip(
+                      label: Text('${e.key}: Rp ${e.value.toStringAsFixed(0)}'),
+                      backgroundColor: col.withOpacity(0.12),
+                      side: BorderSide(color: col),
+                    );
+                  }).toList(),
                 ),
+
                 const SizedBox(height: 8),
 
                 if (highest != null)
@@ -277,7 +285,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    // FIX: pakai variabel averageDaily
                     'Rata-rata Harian: Rp ${averageDaily.toStringAsFixed(0)}',
                     style: const TextStyle(
                       fontSize: 13,
@@ -300,17 +307,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                     itemBuilder: (context, index) {
                       final expense = _visible[index];
                       return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         elevation: 2,
                         child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: categoryColor(expense.category),
-                            child: Icon(
-                              categoryIcon(expense.category),
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
+                          leading: categoryAvatar(expense.category, size: 40),
                           title: Text(
                             expense.title,
                             style: const TextStyle(fontWeight: FontWeight.w500),
@@ -320,11 +321,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                             children: [
                               Text(
                                 expense.category,
-                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                style: TextStyle(
+                                    color: Colors.grey[600], fontSize: 12),
                               ),
                               Text(
                                 expense.formattedDate,
-                                style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                                style: TextStyle(
+                                    color: Colors.grey[500], fontSize: 11),
                               ),
                             ],
                           ),
@@ -344,11 +347,10 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
           ),
         ],
       ),
-
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final ok = await Navigator.pushNamed(context, '/add');
-          if (!mounted) return;            // <- guard setelah await
+          if (!mounted) return;
           if (ok == true) setState(_applyFilter);
         },
         backgroundColor: Colors.blue,
@@ -387,7 +389,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                   Text('fold: Rp ${fold.toStringAsFixed(0)}'),
                   Text('reduce: Rp ${reduce.toStringAsFixed(0)}'),
                   const SizedBox(height: 16),
-
                   const Text('=== Pencarian Data Berdasarkan ID ==='),
                   TextField(
                     controller: idController,
@@ -401,7 +402,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                       setState(() {
                         if (val.isNotEmpty) {
                           foundTraditional =
-                              LoopingExamples.findExpenseTraditional(_visible, val);
+                              LoopingExamples.findExpenseTraditional(
+                                  _visible, val);
                           foundWhere =
                               LoopingExamples.findExpenseWhere(_visible, val);
                         } else {
@@ -413,10 +415,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                   ),
                   const SizedBox(height: 8),
                   if (foundTraditional != null || foundWhere != null) ...[
-                    Text('Manual Loop: ${foundTraditional?.title ?? "Tidak ditemukan"}'),
-                    Text('firstWhere: ${foundWhere?.title ?? "Tidak ditemukan"}'),
+                    Text(
+                        'Manual Loop: ${foundTraditional?.title ?? "Tidak ditemukan"}'),
+                    Text(
+                        'firstWhere: ${foundWhere?.title ?? "Tidak ditemukan"}'),
                   ],
-
                   const SizedBox(height: 16),
                   const Text('=== Filter Kategori "Transportasi" ==='),
                   Text(
@@ -429,7 +432,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tutup')),
+              TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Tutup')),
             ],
           );
         });
@@ -457,7 +462,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tutup')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Tutup')),
         ],
       ),
     );
@@ -477,14 +484,18 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   }
 
   List<Expense> _getExpensesByMonth(List<Expense> list, int month, int year) {
-    return list.where((e) => e.date.month == month && e.date.year == year).toList();
+    return list
+        .where((e) => e.date.month == month && e.date.year == year)
+        .toList();
   }
 
   double _getAverageDaily(List<Expense> list) {
     if (list.isEmpty) return 0.0;
     final total = list.fold<double>(0.0, (sum, e) => sum + e.amount);
-    final uniqueDays =
-        list.map((e) => '${e.date.year}-${e.date.month}-${e.date.day}').toSet().length;
+    final uniqueDays = list
+        .map((e) => '${e.date.year}-${e.date.month}-${e.date.day}')
+        .toSet()
+        .length;
     return uniqueDays == 0 ? 0.0 : total / uniqueDays;
   }
 }

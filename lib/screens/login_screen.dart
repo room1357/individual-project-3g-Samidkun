@@ -16,10 +16,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _doLogin() async {
     setState(() => _loading = true);
+
+    // pakai positional arguments (bukan email: .. password: ..)
     final ok = AuthService.instance.login(
-      email: _emailC.text,
-      password: _passC.text,
+      _emailC.text.trim(),
+      _passC.text,
     );
+
     setState(() => _loading = false);
 
     if (!mounted) return;
@@ -66,7 +69,11 @@ class _LoginScreenState extends State<LoginScreen> {
               child: ElevatedButton(
                 onPressed: _loading ? null : _doLogin,
                 child: _loading
-                    ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Text('Login'),
               ),
             ),

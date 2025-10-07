@@ -1,57 +1,47 @@
 import 'package:flutter/foundation.dart';
 import '../models/app_user.dart';
 
-/// In-memory auth sederhana untuk Proyek 2.
-/// - Simpan user di memori (Map by email)
-/// - Menyediakan register, login, logout, update profile
-/// - Mengelola currentUser agar fitur lain (expense, kategori) bisa tahu ownerId
 class AuthService extends ChangeNotifier {
   AuthService._();
   static final AuthService instance = AuthService._();
 
-  /// Key: email (lowercase), Value: AppUser
-  final Map<String, AppUser> _usersByEmail = {};
+  // Simulasi database user di memori
+  final Map<String, AppUser> _usersByEmail = {};         // email -> user
+  final Map<String, String> _passwordsByEmail = {};      // email -> password
 
   AppUser? _currentUser;
   AppUser? get currentUser => _currentUser;
-  bool get isLoggedIn => _currentUser != null;
 
-  get currentUserId => null;
-
-  /// Register user baru. return true bila sukses, false jika email sudah ada / input kosong.
-  bool register({
-    required String email,
-    required String password,
-    required String name,
-  }) {
+  // ----- Register -----
+  // return true jika sukses, false jika email sudah terpakai
+  bool register(String email, String password, String name) {
     final key = email.trim().toLowerCase();
     if (key.isEmpty || password.trim().isEmpty || name.trim().isEmpty) return false;
-    if (_usersByEmail.containsKey(key)) return false; // email sudah terdaftar
+    if (_usersByEmail.containsKey(key)) return false;
 
     final user = AppUser(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       email: key,
-      password: password,
-      displayName: name.trim(),
+      name: name.trim(),
+      phone: null,
+      photoUrl: null,
+      createdAt: DateTime.now(),
     );
 
     _usersByEmail[key] = user;
-    _currentUser = user; // auto-login setelah register (opsional)
+    _passwordsByEmail[key] = password;
+    _currentUser = user;          // auto login setelah register
     notifyListeners();
     return true;
   }
 
-  /// Login berdasarkan email + password. return true bila sukses.
-  bool login({
-    required String email,
-    required String password,
-  }) {
+  // ----- Login -----
+  bool login(String email, String password) {
     final key = email.trim().toLowerCase();
-    final u = _usersByEmail[key];
-    if (u == null) return false;
-    if (u.password != password) return false;
-
-    _currentUser = u;
+    if (!_usersByEmail.containsKey(key)) return false;
+    final ok = _passwordsByEmail[key] == password;
+    if (!ok) return false;
+    _currentUser = _usersByEmail[key];
     notifyListeners();
     return true;
   }
@@ -61,23 +51,21 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Update profil user yang sedang login.
-  /// Kosongkan parameter jika tidak ingin diubah.
-  void updateProfile({String? displayName, String? newPassword}) {
+  // ----- Update Profile -----
+  // kembalikan true jika berhasil, false kalau belum login
+  bool updateProfile({required String name, String? phone, String? photoUrl}) {
     final u = _currentUser;
-    if (u == null) return;
+    if (u == null) return false;
 
     final updated = u.copyWith(
-      displayName: (displayName == null || displayName.trim().isEmpty)
-          ? u.displayName
-          : displayName.trim(),
-      password: (newPassword == null || newPassword.isEmpty)
-          ? u.password
-          : newPassword,
+      name: name.trim().isEmpty ? u.name : name.trim(),
+      phone: (phone?.trim().isEmpty ?? true) ? null : phone!.trim(),
+      photoUrl: (photoUrl?.trim().isEmpty ?? true) ? null : photoUrl!.trim(),
     );
 
     _currentUser = updated;
-    _usersByEmail[u.email.toLowerCase()] = updated;
+    _usersByEmail[u.email] = updated; // simpan di "db" in-memory
     notifyListeners();
+    return true;
   }
 }

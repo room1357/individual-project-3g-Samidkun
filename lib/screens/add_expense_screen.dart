@@ -100,7 +100,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               // Kategori (dropdown) + fallback jika kosong
               if (catItems.isNotEmpty) ...[
                 DropdownButtonFormField<String>(
-                  value: _category ?? catItems.first,
+                  initialValue: _category ?? catItems.first,
                   items: catItems
                       .map((n) => DropdownMenuItem(value: n, child: Text(n)))
                       .toList(),
@@ -116,6 +116,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.orange),
                     borderRadius: BorderRadius.circular(8),
+                    // ignore: deprecated_member_use
                     color: Colors.orange.withOpacity(.06),
                   ),
                   child: Row(
@@ -127,7 +128,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                         ),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.pushNamed(context, '/categories'),
+                        onPressed: () =>
+                            Navigator.pushNamed(context, '/categories'),
                         child: const Text('Kelola'),
                       ),
                     ],

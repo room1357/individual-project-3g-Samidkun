@@ -13,12 +13,9 @@ class ExpenseService extends ChangeNotifier {
   List<Expense> _allExpenses = [];
   List<CategoryModel> _allCategories = [];
 
-  /// Gunakan ID user (String), bukan AppUser.
   String? get _uid => AuthService.instance.currentUser?.id;
 
-  // ----------------------------
-  // Data yang terlihat oleh user aktif
-  // ----------------------------
+  // ---------- visible data ----------
   List<Expense> get expenses {
     final uid = _uid;
     if (uid == null) return const [];
@@ -39,13 +36,10 @@ class ExpenseService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ----------------------------
-  // Expense CRUD
-  // ----------------------------
+  // ---------- Expense CRUD ----------
   void addExpense(Expense e) {
     final uid = _uid;
     if (uid == null) return;
-
     final withOwner = (e.ownerId == uid) ? e : e.copyWith(ownerId: uid);
     _allExpenses.add(withOwner);
     _storage.saveExpenses(_allExpenses);
@@ -77,10 +71,12 @@ class ExpenseService extends ChangeNotifier {
     }
   }
 
-  // ----------------------------
-  // Category management
-  // ----------------------------
-  bool addCategory(String name) {
+  // ---------- Category ----------
+  bool addCategory(
+    String name, {
+    String? iconKey,
+    String? imageUrl,
+  }) {
     final uid = _uid;
     if (uid == null) return false;
 
@@ -93,39 +89,14 @@ class ExpenseService extends ChangeNotifier {
     if (exists) return false;
 
     final id = DateTime.now().millisecondsSinceEpoch.toString();
-    _allCategories.add(CategoryModel(id: id, name: n, ownerId: uid));
+    _allCategories.add(CategoryModel(
+      id: id,
+      ownerId: uid,
+      name: n,
+      iconKey: iconKey?.trim().isEmpty == true ? null : iconKey?.trim(),
+      imageUrl: imageUrl?.trim().isEmpty == true ? null : imageUrl?.trim(),
+    ));
     _storage.saveCategories(_allCategories);
-    notifyListeners();
-    return true;
-  }
-
-  bool renameCategory(String id, String newName) {
-    final uid = _uid;
-    if (uid == null) return false;
-
-    final n = newName.trim();
-    if (n.isEmpty) return false;
-
-    final dup = _allCategories.any((c) =>
-        (c.ownerId == 'global' || c.ownerId == uid) &&
-        c.name.toLowerCase() == n.toLowerCase());
-    if (dup) return false;
-
-    final idx = _allCategories.indexWhere((c) => c.id == id && c.ownerId == uid);
-    if (idx == -1) return false;
-
-    final oldName = _allCategories[idx].name;
-    _allCategories[idx] = CategoryModel(id: id, name: n, ownerId: uid);
-
-    for (int i = 0; i < _allExpenses.length; i++) {
-      final e = _allExpenses[i];
-      if (e.ownerId == uid && e.category == oldName) {
-        _allExpenses[i] = e.copyWith(category: n);
-      }
-    }
-
-    _storage.saveCategories(_allCategories);
-    _storage.saveExpenses(_allExpenses);
     notifyListeners();
     return true;
   }
@@ -140,8 +111,9 @@ class ExpenseService extends ChangeNotifier {
     );
     if (cat.id.isEmpty) return false;
 
-    final inUse =
-        _allExpenses.any((e) => e.ownerId == uid && e.category == cat.name);
+    final inUse = _allExpenses.any(
+      (e) => e.ownerId == uid && e.category.toLowerCase() == cat.name.toLowerCase(),
+    );
     if (inUse) return false;
 
     _allCategories.removeWhere((c) => c.id == id && c.ownerId == uid);
@@ -150,9 +122,20 @@ class ExpenseService extends ChangeNotifier {
     return true;
   }
 
-  // ----------------------------
-  // Stats
-  // ----------------------------
+  /// Cari kategori by name (untuk ambil iconKey / imageUrl saat render)
+  CategoryModel? findCategoryByName(String name) {
+    final uid = _uid;
+    if (uid == null) return null;
+    try {
+      return _allCategories.firstWhere((c) =>
+          (c.ownerId == 'global' || c.ownerId == uid) &&
+          c.name.toLowerCase() == name.toLowerCase());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ---------- Stats ----------
   double get totalAll => expenses.fold(0.0, (s, e) => s + e.amount);
 
   Map<String, double> get totalPerCategory {

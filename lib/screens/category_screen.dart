@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/expense_service.dart';
+import '../utils/category_style.dart';
 
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen({super.key});
@@ -9,14 +10,15 @@ class CategoryScreen extends StatefulWidget {
 }
 
 class _CategoryScreenState extends State<CategoryScreen> {
-  final _addC = TextEditingController();
-  final _renameC = TextEditingController();
-  String? _selectedId;
+  final _nameC = TextEditingController();
+  final _iconKeyC = TextEditingController();
+  final _imageUrlC = TextEditingController();
 
   @override
   void dispose() {
-    _addC.dispose();
-    _renameC.dispose();
+    _nameC.dispose();
+    _iconKeyC.dispose();
+    _imageUrlC.dispose();
     super.dispose();
   }
 
@@ -31,6 +33,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            // daftar kategori
             Expanded(
               child: ListView.separated(
                 itemCount: cats.length,
@@ -38,16 +41,39 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 itemBuilder: (_, i) {
                   final c = cats[i];
                   return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: categoryColor(c.name),
+                      child: c.imageUrl != null && c.imageUrl!.isNotEmpty
+                          ? ClipOval(
+                              child: Image.network(
+                                c.imageUrl!,
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Icon(
+                                  categoryIcon(c.name),
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            )
+                          : Icon(
+                              categoryIcon(c.name),
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                    ),
                     title: Text(c.name),
-                    selected: _selectedId == c.id,
-                    onTap: () => setState(() => _selectedId = c.id),
+                    subtitle: null,
                     trailing: IconButton(
                       icon: const Icon(Icons.delete),
                       onPressed: () {
                         final ok = svc.deleteCategory(c.id);
                         if (!ok) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Tidak bisa hapus. Kategori sedang dipakai.')),
+                            const SnackBar(
+                              content: Text('Tidak bisa hapus (sedang dipakai).'),
+                            ),
                           );
                         } else {
                           setState(() {});
@@ -58,68 +84,82 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 },
               ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _addC,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama kategori baru',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
+            const SizedBox(height: 12),
+
+            // tambah kategori
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Tambah Kategori',
+                style: TextStyle(
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    final ok = svc.addCategory(_addC.text);
-                    if (!ok) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Nama tidak valid / sudah ada')),
-                      );
-                    } else {
-                      _addC.clear();
-                      setState(() {});
-                    }
-                  },
-                  child: const Text('Tambah'),
-                ),
-              ],
+              ),
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _renameC,
-                    decoration: InputDecoration(
-                      labelText: _selectedId == null ? 'Pilih kategori dulu' : 'Nama baru',
-                      isDense: true,
-                      border: const OutlineInputBorder(),
-                    ),
-                    enabled: _selectedId != null,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _selectedId == null
-                      ? null
-                      : () {
-                          final ok = svc.renameCategory(_selectedId!, _renameC.text);
-                          if (!ok) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Nama tidak valid / sudah ada')),
-                            );
-                          } else {
-                            _renameC.clear();
-                            setState(() {});
-                          }
-                        },
-                  child: const Text('Rename'),
-                ),
-              ],
+            TextField(
+              controller: _nameC,
+              decoration: const InputDecoration(
+                labelText: 'Nama kategori baru',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Compute helperText outside of const InputDecoration
+            TextField(
+              controller: _iconKeyC,
+              decoration: InputDecoration(
+                labelText: 'Icon key (mis. shopping, food, wifi...)',
+                border: const OutlineInputBorder(),
+                isDense: true,
+                helperText:
+                    'Daftar contoh: ${kIconMap.keys.take(8).join(", ")} ... (case-insensitive)',
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _imageUrlC,
+              decoration: const InputDecoration(
+                labelText: 'Image URL (opsional)',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  final ok = svc.addCategory(
+                    _nameC.text,
+                    iconKey: _iconKeyC.text,
+                    imageUrl: _imageUrlC.text,
+                  );
+                  if (!ok) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Nama kosong / duplikat.'),
+                      ),
+                    );
+                  } else {
+                    _nameC.clear();
+                    _iconKeyC.clear();
+                    _imageUrlC.clear();
+                    setState(() {});
+                  }
+                },
+                child: const Text('Tambah'),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+            Text(
+              'Catatan: ikon diisi bebas sesuai key (lihat contoh). '
+              'Jika URL gambar diisi, avatar akan menampilkan gambar tersebut.',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

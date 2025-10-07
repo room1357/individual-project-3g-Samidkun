@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/expense_service.dart';
 import '../utils/currency_utils.dart';
+
 import 'login_screen.dart';
 import 'expense_list_screen.dart';
+import 'profile_screen.dart'; // <-- tambahkan import profile
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -16,6 +18,18 @@ class HomeScreen extends StatelessWidget {
         title: const Text('Expense Manager'),
         backgroundColor: Colors.blue,
         actions: [
+          // Tombol Profile (kanan atas)
+          IconButton(
+            tooltip: 'Profile',
+            icon: const Icon(Icons.account_circle),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
+            },
+          ),
+          // Logout
           IconButton(
             tooltip: 'Logout',
             onPressed: () {
@@ -30,12 +44,11 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
 
-      // 🔽 KUNCI-NYA DI SINI: AnimatedBuilder akan rebuild
-      // tiap kali ExpenseService (ChangeNotifier) memanggil notifyListeners().
+      // Rebuild saat ExpenseService notifyListeners()
       body: AnimatedBuilder(
         animation: svc,
         builder: (context, _) {
-          final total = svc.totalAll; // selalu nilai terbaru
+          final total = svc.totalAll;
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -56,7 +69,7 @@ class HomeScreen extends StatelessWidget {
                     title: const Text('Total Pengeluaran'),
                     subtitle: const Text('Semua kategori & bulan'),
                     trailing: Text(
-                      rp(total), // <- sekarang ikut berubah
+                      rp(total),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -71,6 +84,7 @@ class HomeScreen extends StatelessWidget {
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
+                    childAspectRatio: 1.25,
                     children: [
                       _card(
                         context,
@@ -113,6 +127,19 @@ class HomeScreen extends StatelessWidget {
                         Icons.bar_chart,
                         Colors.orange,
                         () => Navigator.pushNamed(context, '/stats'),
+                      ),
+                      // Kartu Profile di dashboard
+                      _card(
+                        context,
+                        'Profile',
+                        Icons.person,
+                        Colors.deepPurple,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ProfileScreen(),
+                          ),
+                        ),
                       ),
                     ],
                   ),
