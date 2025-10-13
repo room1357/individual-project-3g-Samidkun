@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="pemrograman_mobile"
+        android:label="individual_project_3g_samidkun_newest"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

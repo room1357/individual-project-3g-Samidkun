@@ -8,6 +8,9 @@ import 'screens/category_screen.dart';
 import 'screens/statistics_screen.dart';
 import 'screens/profile_screen.dart';
 
+// 1. TAMBAHKAN IMPORT UNTUK SPLASH SCREEN
+import 'screens/splash_screen.dart';
+
 import 'services/expense_service.dart';
 import 'models/expense.dart';
 
@@ -27,8 +30,9 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
 
-      // Halaman pertama
-      home: const LoginScreen(),
+      // 2. UBAH HALAMAN PERTAMA DARI LOGINSCREEN MENJADI SPLASHSCREEN
+      home: const SplashScreen(),
+
       debugShowCheckedModeBanner: false,
       // Route statis yang tidak butuh argumen
       routes: {

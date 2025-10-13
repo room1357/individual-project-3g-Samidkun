@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.pemrograman_mobile"
+    namespace = "com.example.individual_project_3g_samidkun_newest"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.pemrograman_mobile"
+        applicationId = "com.example.individual_project_3g_samidkun_newest"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

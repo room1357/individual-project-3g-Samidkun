@@ -1,10 +1,10 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
-project(pemrograman_mobile LANGUAGES CXX)
+project(individual_project_3g_samidkun_newest LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "pemrograman_mobile")
+set(BINARY_NAME "individual_project_3g_samidkun_newest")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
