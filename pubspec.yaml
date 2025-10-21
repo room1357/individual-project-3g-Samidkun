@@ -1,4 +1,4 @@
-name: pemrograman_mobile
+name: individual_project_3g_samidkun_newest
 description: A new Flutter project.
 publish_to: "none"
 
@@ -11,6 +11,19 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+
+  smooth_page_indicator: ^1.1.0
+  shared_preferences: ^2.2.3
+  fl_chart: ^0.64.0
+
+  csv: ^5.1.1
+  share_plus: ^7.2.2
+  image_picker: ^1.0.4
+  path_provider: ^2.1.1
+  provider: ^6.1.1
+  intl: ^0.18.1
+  # PAKET UNTUK MENAMPILKAN IKON SVG
+  flutter_svg: ^2.0.7
 
   # Export PDF
   pdf: ^3.11.0
@@ -26,25 +39,21 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # assets:
-  #   - assets/
   assets:
     - assets/images/ 
+    - assets/icons/
 
 flutter_native_splash:
-  color: "#FFFFFF"              # warna latar (hex)
-  image: assets/images/group1.png # <-- UBAH INI (tanpa spasi)
-  # (opsional) dark mode
+  color: "#FFFFFF"
+  image: assets/images/group1.png
   color_dark: "#121212"
   image_dark: assets/images/splash.png
 
-  # Android 12 butuh icon bergaya "monochrome" (optional tapi bagus)
   android_12:
     color: "#FFFFFF"
-    image: assets/images/splash.png # <-- pastikan file ini juga ada
+    image: assets/images/splash.png
     icon_background_color: "#FFFFFF"
 
-  # (opsional) web/ios tweaks
   android: true
   ios: true
   web: true
