@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/expense.dart';
 import '../services/expense_service.dart';
-
+import 'success_screen.dart';
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
 
@@ -10,12 +10,13 @@ class AddExpenseScreen extends StatefulWidget {
 }
 
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
+  // Semua state dan controller lama dipertahankan
   final _formKey = GlobalKey<FormState>();
   final _titleC = TextEditingController();
   final _amountC = TextEditingController();
   final _descC = TextEditingController();
   DateTime _date = DateTime.now();
-  String? _category; // dipilih dari dropdown
+  String? _category;
 
   ExpenseService get svc => ExpenseService.instance;
 
@@ -27,6 +28,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     super.dispose();
   }
 
+  // Semua fungsi logika (_pickDate, _save) tidak berubah
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -43,138 +45,164 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     final amt = double.tryParse(_amountC.text.replaceAll(',', '.')) ?? 0;
     final exp = Expense(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      ownerId: '', // akan diisi oleh service lewat copyWith(ownerId)
+      ownerId: '',
       title: _titleC.text.trim(),
       amount: amt,
       category: _category ?? 'Lainnya',
       date: _date,
       description: _descC.text.trim(),
-      sharedWith: const [],
     );
 
     svc.addExpense(exp);
-    Navigator.pop(context, true);
+  // Di dalam fungsi _save() pada add_expense_screen.dart
+
+// SESUDAH
+// Ganti navigasi pop dengan pushReplacement ke halaman sukses
+Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(builder: (_) => const SuccessScreen()),
+);
   }
 
+  // [DIUBAH] Seluruh build method dirombak
   @override
   Widget build(BuildContext context) {
-    final categories = svc.categories; // bisa kosong
+    final categories = svc.categories;
     final catItems = categories.map((c) => c.name).toList();
+    if (_category == null && catItems.isNotEmpty) {
+      _category = catItems.first;
+    }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Expense')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              // Judul
-              TextFormField(
-                controller: _titleC,
-                decoration: const InputDecoration(
-                  labelText: 'Judul',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.black,
+        title: const Text('Tambah Pengeluaran'),
+        centerTitle: true,
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          children: [
+            const SizedBox(height: 20),
+
+            // [UI BARU] Field Pengeluaran (Judul)
+            _buildSectionTitle('Pengeluaran'),
+            TextFormField(
+              controller: _titleC,
+              decoration: _buildInputDecoration(hintText: 'Name'),
+              validator: (v) => (v == null || v.trim().isEmpty) ? 'Nama pengeluaran wajib diisi' : null,
+            ),
+            const SizedBox(height: 24),
+
+            // [UI BARU] Field Tanggal
+            _buildSectionTitle('Date'),
+            TextFormField(
+              readOnly: true, // Membuat field tidak bisa diketik
+              onTap: _pickDate,
+              controller: TextEditingController(text: '${_date.day}/${_date.month}/${_date.year}'),
+              decoration: _buildInputDecoration(
+                hintText: 'Pilih Tanggal',
+                suffixIcon: const Icon(Icons.calendar_month_outlined, color: Colors.grey),
               ),
-              const SizedBox(height: 12),
+            ),
+            const SizedBox(height: 24),
 
-              // Jumlah
-              TextFormField(
-                controller: _amountC,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Jumlah (angka)',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) {
-                  final d = double.tryParse((v ?? '').replaceAll(',', '.'));
-                  if (d == null || d <= 0) return 'Masukkan angka > 0';
-                  return null;
-                },
+            // [UI BARU] Field Jumlah
+            _buildSectionTitle('Amount'),
+            TextFormField(
+              controller: _amountC,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: _buildInputDecoration(
+                hintText: '0',
+                prefix: const Text('Rp ', style: TextStyle(color: Colors.black)),
               ),
-              const SizedBox(height: 12),
+              validator: (v) {
+                final d = double.tryParse((v ?? '').replaceAll(',', '.'));
+                if (d == null || d <= 0) return 'Masukkan jumlah lebih dari 0';
+                return null;
+              },
+            ),
+            const SizedBox(height: 24),
+            
+            // [UI BARU] Field Kategori
+            _buildSectionTitle('Category'),
+            if (catItems.isNotEmpty)
+              DropdownButtonFormField<String>(
+                value: _category,
+                items: catItems.map((n) => DropdownMenuItem(value: n, child: Text(n))).toList(),
+                onChanged: (v) => setState(() => _category = v),
+                decoration: _buildInputDecoration(hintText: 'Pilih Kategori'),
+                validator: (v) => v == null ? 'Kategori wajib dipilih' : null,
+              )
+            else
+              // Fallback jika tidak ada kategori
+              const Text('Tidak ada kategori. Silakan tambah kategori terlebih dahulu.'),
+            const SizedBox(height: 24),
 
-              // Kategori (dropdown) + fallback jika kosong
-              if (catItems.isNotEmpty) ...[
-                DropdownButtonFormField<String>(
-                  initialValue: _category ?? catItems.first,
-                  items: catItems
-                      .map((n) => DropdownMenuItem(value: n, child: Text(n)))
-                      .toList(),
-                  decoration: const InputDecoration(
-                    labelText: 'Kategori',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (v) => setState(() => _category = v),
-                ),
-              ] else ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.orange),
-                    borderRadius: BorderRadius.circular(8),
-                    // ignore: deprecated_member_use
-                    color: Colors.orange.withOpacity(.06),
-                  ),
-                  child: Row(
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'Belum ada kategori. Tambahkan kategori dulu.',
-                          style: TextStyle(fontSize: 13),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () =>
-                            Navigator.pushNamed(context, '/categories'),
-                        child: const Text('Kelola'),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
+            // [UI BARU] Field Deskripsi
+            _buildSectionTitle('Description (Optional)'),
+            TextFormField(
+              controller: _descC,
+              minLines: 3,
+              maxLines: 5,
+              decoration: _buildInputDecoration(hintText: 'Deskripsi Tambahan'),
+            ),
+            const SizedBox(height: 40),
 
-              // Tanggal
-              InkWell(
-                onTap: _pickDate,
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Tanggal',
-                    border: OutlineInputBorder(),
-                  ),
-                  child: Text('${_date.day}/${_date.month}/${_date.year}'),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Deskripsi
-              TextFormField(
-                controller: _descC,
-                minLines: 2,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Deskripsi (opsional)',
-                  border: OutlineInputBorder(),
+            // [UI BARU] Tombol Simpan
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.pinkAccent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              const SizedBox(height: 20),
-
-              // Tombol Simpan
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: (catItems.isEmpty) ? null : _save,
-                  child: const Text('Simpan'),
-                ),
-              ),
-            ],
-          ),
+              onPressed: catItems.isEmpty ? null : _save,
+              child: const Text('Simpan Pengeluaran', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 20),
+          ],
         ),
       ),
+    );
+  }
+
+  // --- Helper Widget untuk UI Baru ---
+
+  // Helper untuk membuat judul setiap section
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black54),
+      ),
+    );
+  }
+
+  // Helper untuk membuat style input field yang konsisten
+  InputDecoration _buildInputDecoration({
+    required String hintText,
+    Widget? suffixIcon,
+    Widget? prefix,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      prefix: prefix,
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: Colors.grey[100],
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none, // Menghilangkan border
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 }

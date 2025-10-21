@@ -10,159 +10,185 @@ class CategoryScreen extends StatefulWidget {
 }
 
 class _CategoryScreenState extends State<CategoryScreen> {
-  final _nameC = TextEditingController();
-  final _iconKeyC = TextEditingController();
-  final _imageUrlC = TextEditingController();
+  void _showAddCategorySheet() {
+    final nameC = TextEditingController();
+    String? selectedIconKey;
 
-  @override
-  void dispose() {
-    _nameC.dispose();
-    _iconKeyC.dispose();
-    _imageUrlC.dispose();
-    super.dispose();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                top: 20, left: 20, right: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Tambah Kategori Baru',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: nameC,
+                    decoration: InputDecoration(
+                      labelText: 'Nama Kategori',
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  IconPickerDropdown(
+                    selectedIconKey: selectedIconKey,
+                    onChanged: (newValue) {
+                      setModalState(() {
+                        selectedIconKey = newValue;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.pinkAccent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    ),
+                    onPressed: () {
+                      final name = nameC.text.trim();
+                      final iconKey = selectedIconKey;
+
+                      if (name.isEmpty || iconKey == null) {
+                        // Handle validasi, mungkin dengan menampilkan pesan
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Nama dan ikon wajib diisi.')),
+                        );
+                        return;
+                      }
+
+                      // [PERBAIKAN DI SINI] Menggunakan named parameter "name:"
+                      final ok = ExpenseService.instance.addCategory(name: name, iconKey: iconKey);
+                      
+                      if (!ok && mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Nama kategori sudah ada (duplikat).')),
+                        );
+                      } else {
+                        Navigator.pop(context); // Tutup bottom sheet setelah berhasil
+                      }
+                    },
+                    child: const Text('Simpan Kategori'),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final svc = ExpenseService.instance;
-    final cats = svc.categories;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Kelola Kategori')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // daftar kategori
-            Expanded(
-              child: ListView.separated(
-                itemCount: cats.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (_, i) {
-                  final c = cats[i];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: categoryColor(c.name),
-                      child: c.imageUrl != null && c.imageUrl!.isNotEmpty
-                          ? ClipOval(
-                              child: Image.network(
-                                c.imageUrl!,
-                                width: 40,
-                                height: 40,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Icon(
-                                  categoryIcon(c.name),
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            )
-                          : Icon(
-                              categoryIcon(c.name),
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                    ),
-                    title: Text(c.name),
-                    subtitle: null,
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () {
-                        final ok = svc.deleteCategory(c.id);
-                        if (!ok) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Tidak bisa hapus (sedang dipakai).'),
-                            ),
-                          );
-                        } else {
-                          setState(() {});
-                        }
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
+      appBar: AppBar(
+        title: const Text('Kelola Kategori'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
+      backgroundColor: Colors.white,
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddCategorySheet,
+        backgroundColor: Colors.pinkAccent,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+      body: AnimatedBuilder(
+        animation: svc,
+        builder: (context, _) {
+          final cats = svc.categories.where((c) => c.ownerId != 'global').toList();
 
-            // tambah kategori
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Tambah Kategori',
-                style: TextStyle(
-                  color: Colors.grey[700],
-                  fontWeight: FontWeight.w600,
+          if (cats.isEmpty) {
+            return const Center(child: Text('Belum ada kategori. Tekan tombol + untuk menambah.'));
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: cats.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (_, i) {
+              final c = cats[i];
+              return Dismissible(
+                key: Key(c.id),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  color: Colors.red.shade400,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: const Icon(Icons.delete_outline, color: Colors.white),
                 ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _nameC,
-              decoration: const InputDecoration(
-                labelText: 'Nama kategori baru',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Compute helperText outside of const InputDecoration
-            TextField(
-              controller: _iconKeyC,
-              decoration: InputDecoration(
-                labelText: 'Icon key (mis. shopping, food, wifi...)',
-                border: const OutlineInputBorder(),
-                isDense: true,
-                helperText:
-                    'Daftar contoh: ${kIconMap.keys.take(8).join(", ")} ... (case-insensitive)',
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _imageUrlC,
-              decoration: const InputDecoration(
-                labelText: 'Image URL (opsional)',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  final ok = svc.addCategory(
-                    _nameC.text,
-                    iconKey: _iconKeyC.text,
-                    imageUrl: _imageUrlC.text,
-                  );
-                  if (!ok) {
+                confirmDismiss: (direction) async {
+                  return await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Konfirmasi Hapus'),
+                      content: Text('Hapus kategori "${c.name}"?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('Batal'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  ) ?? false; // Return false jika dialog ditutup tanpa menekan tombol
+                },
+                onDismissed: (direction) {
+                  final ok = svc.deleteCategory(c.id);
+                  if (!ok && mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Nama kosong / duplikat.'),
-                      ),
+                      const SnackBar(content: Text('Tidak bisa hapus (kategori sedang dipakai).')),
                     );
-                  } else {
-                    _nameC.clear();
-                    _iconKeyC.clear();
-                    _imageUrlC.clear();
-                    setState(() {});
                   }
                 },
-                child: const Text('Tambah'),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-            Text(
-              'Catatan: ikon diisi bebas sesuai key (lihat contoh). '
-              'Jika URL gambar diisi, avatar akan menampilkan gambar tersebut.',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+                child: Card(
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: ListTile(
+                    leading: categoryAvatar(c.name),
+                    title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.edit_outlined, color: Colors.grey),
+                      onPressed: () {
+                        // TODO: Implementasi fungsi edit
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

@@ -1,97 +1,73 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../models/expense.dart';
 import '../services/expense_service.dart';
-import '../utils/currency_utils.dart';
 import '../utils/category_style.dart';
+import '../utils/currency_utils.dart';
+import 'dart:math';
 
-class StatisticsScreen extends StatelessWidget {
+// Enum sekarang hanya punya 2 pilihan
+enum ChartView { bulanan, tahunan }
+
+class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
+
+  @override
+  State<StatisticsScreen> createState() => _StatisticsScreenState();
+}
+
+class _StatisticsScreenState extends State<StatisticsScreen> {
+  ChartView _selectedView = ChartView.bulanan;
 
   @override
   Widget build(BuildContext context) {
     final svc = ExpenseService.instance;
 
-    final total = svc.totalAll;
-    final perCat = svc.totalPerCategory;
-    final perMonth = svc.totalPerMonth;
-
-    final maxCat = perCat.values.isEmpty
-        ? 0.0
-        : perCat.values.reduce((a, b) => a > b ? a : b);
-    final maxMonth = perMonth.values.isEmpty
-        ? 0.0
-        : perMonth.values.reduce((a, b) => a > b ? a : b);
-
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Statistik Pengeluaran',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Statistik Pengeluaran'),
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        centerTitle: true,
       ),
       body: AnimatedBuilder(
         animation: svc,
-        builder: (_, __) {
-          return CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-                  child: _TotalCard(total: total),
-                ),
+        builder: (context, _) {
+          final allExpenses = svc.expenses;
+          final totalExpense = svc.totalAll;
+
+          final highestExpenses = List.of(allExpenses);
+          highestExpenses.sort((a, b) => b.amount.compareTo(a.amount));
+
+          return ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            children: [
+              const SizedBox(height: 20),
+              _buildTotalCard(totalExpense),
+              const SizedBox(height: 30),
+              _buildFilterButtons(),
+              const SizedBox(height: 20),
+              SizedBox(
+                height: 200,
+                child: _buildChart(svc),
               ),
-
-              if (perCat.isNotEmpty)
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    child: _SectionTitle(
-                      icon: Icons.category_rounded,
-                      title: 'Per Kategori',
-                    ),
-                  ),
+              const SizedBox(height: 40),
+              const Text('Pengeluaran Tertinggi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              if (highestExpenses.isEmpty)
+                const Center(child: Text('Belum ada data.'))
+              else
+                ListView.builder(
+                  itemCount: highestExpenses.take(5).length,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemBuilder: (context, index) {
+                    final expense = highestExpenses[index];
+                    return _buildExpenseListItem(expense);
+                  },
                 ),
-
-              SliverList.builder(
-                itemCount: perCat.length,
-                itemBuilder: (context, i) {
-                  final entry = perCat.entries.elementAt(i);
-                  final name = entry.key;
-                  final ratio = maxCat == 0 ? 0.0 : entry.value / maxCat;
-                  final color = categoryColor(name);
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _ProgressTile(
-                      label: name,
-                      valueText: rp(entry.value),
-                      value: ratio,
-                      color: color,
-                      leading: _leadingFor(name), // <<— pakai gambar kalau ada
-                    ),
-                  );
-                },
-              ),
-
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-                  child: _SectionTitle(
-                    icon: Icons.bar_chart_rounded,
-                    title: 'Trend Bulanan',
-                  ),
-                ),
-              ),
-
-              SliverToBoxAdapter(
-                child: _MonthBarChart(
-                  perMonth: perMonth,
-                  maxMonth: maxMonth,
-                ),
-              ),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
             ],
           );
         },
@@ -99,340 +75,181 @@ class StatisticsScreen extends StatelessWidget {
     );
   }
 
-  /// Bikin leading untuk setiap baris kategori.
-  /// - Kalau kategori punya imageUrl -> tampilkan foto.
-  /// - Kalau tidak -> fallback ke ikon + warna.
-  Widget _leadingFor(String name) {
-    final svc = ExpenseService.instance;
-    final cat = svc.findCategoryByName(name);
-    final color = categoryColor(name);
-
-    final imageUrl = cat?.imageUrl?.trim();
-    if (imageUrl != null && imageUrl.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          imageUrl,
-          width: 28,
-          height: 28,
-          fit: BoxFit.cover,
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Icon(
-        categoryIcon(name),
-        color: color,
-        size: 20,
-      ),
-    );
-  }
-}
-
-class _TotalCard extends StatelessWidget {
-  const _TotalCard({required this.total});
-  final double total;
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return Container(
-      decoration: BoxDecoration(
-        color: primary,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: primary.withOpacity(0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                'Total Semua Pengeluaran',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Icon(Icons.account_balance_wallet_rounded,
-                  color: Colors.white, size: 30),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            rp(total),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.w900,
-              letterSpacing: .5,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            height: 2,
-            width: 60,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(1),
-            ),
-          )
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.icon, required this.title});
-  final IconData icon;
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildFilterButtons() {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
-        const SizedBox(width: 8),
-        const SizedBox(width: 2),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+        _buildFilterChip('Bulanan', ChartView.bulanan),
+        const SizedBox(width: 12),
+        _buildFilterChip('Tahunan', ChartView.tahunan),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(String label, ChartView view) {
+    final bool isSelected = _selectedView == view;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) setState(() => _selectedView = view);
+      },
+      selectedColor: Colors.pinkAccent.withOpacity(0.1),
+      labelStyle: TextStyle(color: isSelected ? Colors.pinkAccent : Colors.black54, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: isSelected ? Colors.pinkAccent : Colors.grey.shade300),
+      ),
+      backgroundColor: Colors.white,
+    );
+  }
+
+  // [DIUBAH] Switch sekarang ditambahkan 'default'
+  Widget _buildChart(ExpenseService svc) {
+    switch (_selectedView) {
+      case ChartView.bulanan:
+        final data = svc.totalPerMonth;
+        final spots = List.generate(12, (i) => FlSpot((i + 1).toDouble(), data[i + 1] ?? 0));
+        return LineChart(_buildChartData(spots, data.values, _bottomTitlesMonthly));
+        
+      case ChartView.tahunan:
+        final data = svc.totalPerYear;
+        if (data.keys.isEmpty) return const Center(child: Text('Tidak ada data tahunan.'));
+        
+        final sortedYears = data.keys.toList()..sort();
+        final minYear = sortedYears.first;
+        final maxYear = sortedYears.last;
+
+        final spots = <FlSpot>[];
+        for (int year = minYear; year <= maxYear; year++) {
+          spots.add(FlSpot(year.toDouble(), data[year] ?? 0));
+        }
+        return LineChart(_buildChartData(spots, data.values, _bottomTitlesYearly));
+    }
+  }
+
+  // [DILENGKAPI] Bagian dalam LineChartBarData ditambahkan
+  LineChartData _buildChartData(List<FlSpot> spots, Iterable<double> values, SideTitles bottomTitles) {
+    final chartColor = Colors.pinkAccent;
+    double maxY = 0;
+    if (values.isNotEmpty) maxY = values.reduce(max);
+    maxY = maxY == 0 ? 1000 : maxY * 1.2;
+
+    return LineChartData(
+      gridData: const FlGridData(show: false),
+      titlesData: FlTitlesData(
+        bottomTitles: AxisTitles(sideTitles: bottomTitles),
+        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      ),
+      borderData: FlBorderData(show: false),
+      minY: 0,
+      maxY: maxY,
+      lineBarsData: [
+        LineChartBarData(
+          spots: spots,
+          isCurved: true,
+          color: chartColor,
+          barWidth: 3,
+          dotData: const FlDotData(show: false),
+          belowBarData: BarAreaData(
+            show: true,
+            gradient: LinearGradient(
+              colors: [chartColor.withOpacity(0.5), chartColor.withOpacity(0.0)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
           ),
         ),
       ],
     );
   }
-}
 
-class _ProgressTile extends StatelessWidget {
-  const _ProgressTile({
-    required this.label,
-    required this.valueText,
-    required this.value,
-    required this.color,
-    required this.leading,
-  });
+  SideTitles get _bottomTitlesMonthly => SideTitles(
+    showTitles: true,
+    reservedSize: 30,
+    interval: 1,
+    getTitlesWidget: (value, meta) {
+      const style = TextStyle(color: Colors.grey, fontSize: 12);
+      String text = '';
+      switch (value.toInt()) {
+        case 1: text = 'Jan'; break; case 2: text = 'Feb'; break;
+        case 3: text = 'Mar'; break; case 4: text = 'Apr'; break;
+        case 5: text = 'Mei'; break; case 6: text = 'Jun'; break;
+        case 7: text = 'Jul'; break; case 8: text = 'Agu'; break;
+        case 9: text = 'Sep'; break; case 10: text = 'Okt'; break;
+        case 11: text = 'Nov'; break; case 12: text = 'Des'; break;
+        default: text = ''; break;
+      }
+      return SideTitleWidget(axisSide: meta.axisSide, child: Text(text, style: style));
+    },
+  );
+  
+  SideTitles get _bottomTitlesYearly => SideTitles(
+    showTitles: true,
+    reservedSize: 30,
+    interval: 1,
+    getTitlesWidget: (value, meta) {
+      const style = TextStyle(color: Colors.grey, fontSize: 12);
+      return SideTitleWidget(axisSide: meta.axisSide, child: Text(value.toInt().toString().substring(2), style: style));
+    },
+  );
 
-  final String label;
-  final String valueText;
-  final double value;
-  final Color color;
-  final Widget leading; // <<— bisa gambar atau icon
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  // [DILENGKAPI] Widget-widget helper ditambahkan kembali
+  Widget _buildTotalCard(double total) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.pinkAccent,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              leading,
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      valueText,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: color.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const Text('Total Semua Pengeluaran', style: TextStyle(color: Colors.white70, fontSize: 16)),
+              const SizedBox(height: 8),
               Text(
-                '${(value * 100).toStringAsFixed(0)}%',
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600, color: Colors.grey),
+                rp(total, context),
+                style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: value.clamp(0.0, 1.0),
-              minHeight: 8,
-              backgroundColor: color.withOpacity(0.1),
-              color: color,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
             ),
+            child: const Icon(Icons.wallet, color: Colors.white, size: 28),
           ),
         ],
       ),
     );
   }
-}
 
-class _MonthBarChart extends StatelessWidget {
-  const _MonthBarChart({required this.perMonth, required this.maxMonth});
-
-  final Map<int, double> perMonth;
-  final double maxMonth;
-
-  String _getShortenedAmount(double v) {
-    if (v >= 1000000) return 'Rp${(v / 1000000).toStringAsFixed(1)}Jt';
-    if (v >= 1000) return 'Rp${(v / 1000).toStringAsFixed(0)}K';
-    return rp(v);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final months = List.generate(12, (i) => i + 1);
-    const barMaxHeight = 180.0;
-    final primaryColor = Theme.of(context).colorScheme.primary;
-
+  Widget _buildExpenseListItem(Expense expense) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-      child: Stack(
-        alignment: Alignment.bottomCenter,
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
         children: [
-          if (maxMonth > 0)
-            Positioned.fill(
-              bottom: 40,
-              child: CustomPaint(painter: _GridPainter(barMaxHeight)),
-            ),
-          if (maxMonth > 0)
-            Positioned(
-              top: 0,
-              left: 0,
-              child: Text(
-                _getShortenedAmount(maxMonth),
-                style: TextStyle(
-                  color: primaryColor.withOpacity(0.8),
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          SizedBox(
-            height: barMaxHeight + 40,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: months.map((m) {
-                final v = perMonth[m] ?? 0.0;
-                final h = maxMonth == 0 ? 0.0 : (v / maxMonth) * barMaxHeight;
-                final isMax = v == maxMonth && maxMonth > 0;
-
-                return Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (v > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4.0),
-                          child: Text(
-                            _getShortenedAmount(v),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: isMax ? primaryColor : Colors.grey.shade600,
-                            ),
-                          ),
-                        ),
-                      Tooltip(
-                        message: '${_month(m)}: ${rp(v)}',
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 400),
-                          curve: Curves.easeOutCubic,
-                          height: h,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            color: isMax
-                                ? primaryColor
-                                : primaryColor.withOpacity(0.7),
-                            borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(8)),
-                            boxShadow: [
-                              if (h > 0)
-                                BoxShadow(
-                                  color: primaryColor.withOpacity(.25),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _month(m),
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontSize: 11,
-                          fontWeight:
-                              isMax ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+          categoryAvatar(expense.category, size: 45),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(expense.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(expense.formattedDate, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
             ),
           ),
+          Text('- ${rp(expense.amount, context)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
         ],
       ),
     );
   }
-
-  String _month(int m) {
-    const names = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    return names[m - 1];
-  }
-}
-
-class _GridPainter extends CustomPainter {
-  const _GridPainter(this.height);
-  final double height;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.grey.shade200
-      ..strokeWidth = 1.0;
-    canvas.drawLine(Offset(0, height), Offset(size.width, height), paint);
-    canvas.drawLine(Offset(0, height * 0.75), Offset(size.width, height * 0.75), paint);
-    canvas.drawLine(Offset(0, height * 0.5), Offset(size.width, height * 0.5), paint);
-    canvas.drawLine(Offset(0, height * 0.25), Offset(size.width, height * 0.25), paint);
-
-    paint
-      ..color = Colors.grey.shade400
-      ..strokeWidth = 1.5;
-    canvas.drawLine(Offset(0, 0), Offset(size.width, 0), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
