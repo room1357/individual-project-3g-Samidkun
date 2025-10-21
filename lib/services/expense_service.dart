@@ -15,7 +15,6 @@ class ExpenseService extends ChangeNotifier {
 
   String? get _uid => AuthService.instance.currentUser?.id;
 
-  // ---------- visible data ----------
   List<Expense> get expenses {
     final uid = _uid;
     if (uid == null) return const [];
@@ -36,7 +35,7 @@ class ExpenseService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---------- Expense CRUD ----------
+  // ---------- Expense CRUD (Dikembalikan) ----------
   void addExpense(Expense e) {
     final uid = _uid;
     if (uid == null) return;
@@ -71,12 +70,8 @@ class ExpenseService extends ChangeNotifier {
     }
   }
 
-  // ---------- Category ----------
-  bool addCategory(
-    String name, {
-    String? iconKey,
-    String? imageUrl,
-  }) {
+  // ---------- Category (Dikembalikan & Disesuaikan) ----------
+  bool addCategory({required String name, String? iconKey}) {
     final uid = _uid;
     if (uid == null) return false;
 
@@ -94,7 +89,7 @@ class ExpenseService extends ChangeNotifier {
       ownerId: uid,
       name: n,
       iconKey: iconKey?.trim().isEmpty == true ? null : iconKey?.trim(),
-      imageUrl: imageUrl?.trim().isEmpty == true ? null : imageUrl?.trim(),
+      imageUrl: null, // imageUrl tidak lagi dipakai
     ));
     _storage.saveCategories(_allCategories);
     notifyListeners();
@@ -122,7 +117,6 @@ class ExpenseService extends ChangeNotifier {
     return true;
   }
 
-  /// Cari kategori by name (untuk ambil iconKey / imageUrl saat render)
   CategoryModel? findCategoryByName(String name) {
     final uid = _uid;
     if (uid == null) return null;
@@ -135,7 +129,7 @@ class ExpenseService extends ChangeNotifier {
     }
   }
 
-  // ---------- Stats ----------
+  // ---------- Stats (Disederhanakan) ----------
   double get totalAll => expenses.fold(0.0, (s, e) => s + e.amount);
 
   Map<String, double> get totalPerCategory {
@@ -150,6 +144,14 @@ class ExpenseService extends ChangeNotifier {
     final map = <int, double>{};
     for (final e in expenses) {
       map[e.date.month] = (map[e.date.month] ?? 0.0) + e.amount;
+    }
+    return map;
+  }
+
+  Map<int, double> get totalPerYear {
+    final map = <int, double>{};
+    for (final e in expenses) {
+      map[e.date.year] = (map[e.date.year] ?? 0.0) + e.amount;
     }
     return map;
   }
