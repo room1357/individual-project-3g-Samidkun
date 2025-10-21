@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'services/settings_service.dart';
+import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/expense_list_screen.dart';
@@ -7,15 +10,20 @@ import 'screens/edit_expense_screen.dart';
 import 'screens/category_screen.dart';
 import 'screens/statistics_screen.dart';
 import 'screens/profile_screen.dart';
-
-// 1. TAMBAHKAN IMPORT UNTUK SPLASH SCREEN
-import 'screens/splash_screen.dart';
-
-import 'services/expense_service.dart';
 import 'models/expense.dart';
+import 'services/expense_service.dart';
 
 void main() {
-  runApp(const MyApp());
+  // Pastikan binding Flutter sudah siap
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Bungkus aplikasi dengan Provider agar SettingsService bisa diakses
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => SettingsService(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -23,18 +31,36 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Ambil dan "dengarkan" service menggunakan context.watch
+    final settings = context.watch<SettingsService>();
+
     return MaterialApp(
       title: 'Expense Application',
+      
+      // Mengatur tema berdasarkan state dari service
+      themeMode: settings.themeMode,
+
+      // Tema Terang (Light Mode)
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        brightness: Brightness.light,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.pinkAccent),
         useMaterial3: true,
       ),
 
-      // 2. UBAH HALAMAN PERTAMA DARI LOGINSCREEN MENJADI SPLASHSCREEN
-      home: const SplashScreen(),
+      // Tema Gelap (Dark Mode)
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.pinkAccent,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
 
+      home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
-      // Route statis yang tidak butuh argumen
+      
+      // routes dan onGenerateRoute Anda tetap sama
       routes: {
         '/home': (_) => const HomeScreen(),
         '/expenses': (_) => const ExpenseListScreen(),
@@ -43,40 +69,21 @@ class MyApp extends StatelessWidget {
         '/stats': (_) => const StatisticsScreen(),
         '/profile': (_) => const ProfileScreen(),
       },
-
-      // Route dinamis: /edit
-      onGenerateRoute: (settings) {
-        if (settings.name == '/edit') {
-          final args = settings.arguments;
-
-          // mode 1: langsung kirim instance Expense
+      onGenerateRoute: (routeSettings) { // ubah nama var 'settings' agar tidak bentrok
+        if (routeSettings.name == '/edit') {
+          final args = routeSettings.arguments;
           if (args is Expense) {
-            return MaterialPageRoute(
-              builder: (_) => EditExpenseScreen(expense: args),
-            );
+            return MaterialPageRoute(builder: (_) => EditExpenseScreen(expense: args));
           }
-
-          // mode 2: kirim String expenseId, ambil dari service
           if (args is String) {
             final e = ExpenseService.instance.getById(args);
             if (e != null) {
-              return MaterialPageRoute(
-                builder: (_) => EditExpenseScreen(expense: e),
-              );
+              return MaterialPageRoute(builder: (_) => EditExpenseScreen(expense: e));
             }
-            // kalau id tidak ketemu, balik ke daftar
-            return MaterialPageRoute(
-              builder: (_) => const ExpenseListScreen(),
-            );
+            return MaterialPageRoute(builder: (_) => const ExpenseListScreen());
           }
-
-          // fallback bila argumen tidak valid
-          return MaterialPageRoute(
-            builder: (_) => const ExpenseListScreen(),
-          );
+          return MaterialPageRoute(builder: (_) => const ExpenseListScreen());
         }
-
-        // unknown route -> home
         return null;
       },
     );
