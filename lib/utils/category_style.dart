@@ -1,9 +1,11 @@
+// File: lib/utils/category_style.dart
+
 import 'package:flutter/material.dart';
 import '../services/expense_service.dart';
 import '../models/category.dart';
 
 /// Peta string -> IconData yang kita dukung.
-/// User mengisi `iconKey` salah satu dari key ini (case-insensitive).
+/// Ini adalah satu-satunya sumber ikon untuk kategori.
 const Map<String, IconData> kIconMap = {
   'food': Icons.restaurant,
   'makanan': Icons.restaurant,
@@ -32,35 +34,30 @@ const Map<String, IconData> kIconMap = {
   'lainnya': Icons.category,
 };
 
-/// Fallback: ikon default jika tidak ada mapping / user tidak mengisi.
+/// Fallback: ikon default jika tidak ada mapping.
 const IconData kDefaultIcon = Icons.category;
 
-/// Warna stabil dari string (berdasar hash), biar tiap kategori punya warna tetap.
+/// Warna stabil dari string (berdasar hash).
 Color _hashColor(String input) {
   final h = input.toLowerCase().hashCode;
-  // variasikan hue saja supaya tetap lembut
   final hue = (h % 360).toDouble();
   return HSLColor.fromAHSL(1.0, hue, 0.45, 0.60).toColor();
 }
 
-/// Ambil IconData dari string key user.
+/// Ambil IconData dari string key.
 IconData _iconFromKey(String? rawKey) {
   if (rawKey == null || rawKey.trim().isEmpty) return kDefaultIcon;
   final key = rawKey.trim().toLowerCase();
   return kIconMap[key] ?? kDefaultIcon;
 }
 
-/// ----- API yang dipakai screen -----
-/// color/icon berdasarkan NAMA KATEGORI.
-/// Jika kategori punya imageUrl, warna tetap dipakai (ikon di ListTile akan
-/// otomatis menunjukkan gambar di UI kalau kamu edit ListTile-nya).
+// ----- API yang dipakai screen -----
 
 Color colorOf(String categoryName) {
   return _hashColor(categoryName);
 }
 
 IconData iconOf(String categoryName) {
-  // cek apakah user menaruh key di kategori
   final CategoryModel? c =
       ExpenseService.instance.findCategoryByName(categoryName);
   if (c != null) {
@@ -69,23 +66,11 @@ IconData iconOf(String categoryName) {
   return kDefaultIcon;
 }
 
-/// --- Backward compatibility (agar error lama hilang) ---
 Color categoryColor(String name) => colorOf(name);
 IconData categoryIcon(String name) => iconOf(name);
-/// Widget avatar dinamis kategori: jika ada imageUrl -> tampil gambar
-/// jika tidak -> tampil ikon sesuai iconKey, jika tetap kosong -> ikon default
+
+// [DIUBAH] Widget avatar sekarang lebih sederhana
 Widget categoryAvatar(String categoryName, {double size = 40}) {
-  final cat = ExpenseService.instance.findCategoryByName(categoryName);
-
-  if (cat != null && cat.imageUrl != null && cat.imageUrl!.isNotEmpty) {
-    return CircleAvatar(
-      radius: size / 2,
-      backgroundColor: Colors.transparent,
-      backgroundImage: NetworkImage(cat.imageUrl!),
-      onBackgroundImageError: (_, __) {},
-    );
-  }
-
   return CircleAvatar(
     radius: size / 2,
     backgroundColor: categoryColor(categoryName),
@@ -97,3 +82,45 @@ Widget categoryAvatar(String categoryName, {double size = 40}) {
   );
 }
 
+// --- TAMBAHKAN KODE WIDGET BARU INI DI BAWAH KODE SEBELUMNYA ---
+
+class IconPickerDropdown extends StatelessWidget {
+  // Nilai (key) ikon yang sedang dipilih, contoh: 'food'
+  final String? selectedIconKey;
+  
+  // Fungsi yang akan dipanggil saat user memilih ikon baru
+  final ValueChanged<String?> onChanged;
+
+  const IconPickerDropdown({
+    super.key,
+    required this.selectedIconKey,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<String>(
+      value: selectedIconKey,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: 'Pilih Ikon',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      // Membuat daftar item dropdown dari kIconMap
+      items: kIconMap.entries.map((entry) {
+        return DropdownMenuItem<String>(
+          value: entry.key, // Nilai yang disimpan adalah key-nya (String)
+          child: Row(
+            children: [
+              Icon(entry.value), // Tampilkan ikon
+              const SizedBox(width: 12),
+              Text(entry.key), // Tampilkan nama key-nya
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
