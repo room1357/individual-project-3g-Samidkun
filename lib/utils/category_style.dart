@@ -8,15 +8,9 @@ import '../models/category.dart';
 /// Ini adalah satu-satunya sumber ikon untuk kategori.
 const Map<String, IconData> kIconMap = {
   'food': Icons.restaurant,
-  'makanan': Icons.restaurant,
   'coffee': Icons.local_cafe,
-  'cafe': Icons.local_cafe,
   'transport': Icons.directions_bus,
-  'bus': Icons.directions_bus,
-  'motor': Icons.two_wheeler,
   'shopping': Icons.shopping_bag,
-  'belanja': Icons.shopping_bag,
-  'home': Icons.home,
   'house': Icons.home,
   'internet': Icons.wifi,
   'wifi': Icons.wifi,
@@ -31,7 +25,6 @@ const Map<String, IconData> kIconMap = {
   'fuel': Icons.local_gas_station,
   'gift': Icons.card_giftcard,
   'other': Icons.category,
-  'lainnya': Icons.category,
 };
 
 /// Fallback: ikon default jika tidak ada mapping.
