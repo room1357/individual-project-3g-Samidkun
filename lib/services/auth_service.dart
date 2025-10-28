@@ -23,6 +23,7 @@ class AuthService extends ChangeNotifier {
       name: name.trim(),
       phone: null,
       photoUrl: null,
+      username: key,
       createdAt: DateTime.now(),
     );
 
