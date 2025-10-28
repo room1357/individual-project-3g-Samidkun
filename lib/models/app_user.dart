@@ -4,6 +4,7 @@ class AppUser {
   final String name;
   final String? phone;
   final String? photoUrl;
+  final String username; 
   final DateTime createdAt;
 
   const AppUser({
@@ -12,6 +13,7 @@ class AppUser {
     required this.name,
     this.phone,
     this.photoUrl,
+    required this.username,
     required this.createdAt,
   });
 
@@ -26,6 +28,7 @@ class AppUser {
       name: name ?? this.name,
       phone: phone ?? this.phone,
       photoUrl: photoUrl ?? this.photoUrl,
+      username: username,
       createdAt: createdAt,
     );
   }
@@ -36,6 +39,7 @@ class AppUser {
         name: j['name'] as String,
         phone: j['phone'] as String?,
         photoUrl: j['photoUrl'] as String?,
+        username: (j['username'] as String?) ?? j['email'].toString().split('@').first,
         createdAt: DateTime.parse(j['createdAt'] as String),
       );
 
@@ -45,6 +49,7 @@ class AppUser {
         'name': name,
         'phone': phone,
         'photoUrl': photoUrl,
+         'username': username,
         'createdAt': createdAt.toIso8601String(),
       };
 }

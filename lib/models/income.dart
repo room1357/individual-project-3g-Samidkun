@@ -1,81 +1,50 @@
-// lib/models/expense.dart
-
-class Expense {
+class Income {
   final String id;
-  final String ownerId;            // pembuat/pembayar
+  final String ownerId;
   final String title;
   final double amount;
-  final String category;
   final DateTime date;
   final String description;
-  final List<String> sharedWith;   // id user lain yang ikut expense ini
+  final List<String> sharedWith;
 
-  // ===== Helper Shared Expenses (baru) =====
-  /// Peserta = owner + sharedWith (unik & bersih).
-  List<String> get participants {
-    final set = <String>{};
-    if (ownerId.trim().isNotEmpty) set.add(ownerId);
-    set.addAll(sharedWith.where((e) => e.trim().isNotEmpty));
-    return set.toList(growable: false);
-  }
-
-  /// Apakah uid ikut (sebagai owner/participant).
-  bool isParticipant(String uid) => participants.contains(uid);
-
-  /// Porsi rupiah untuk uid (MVP: bagi rata).
-  double shareFor(String uid) {
-    if (!isParticipant(uid)) return 0;
-    final n = participants.length;
-    if (n <= 0) return 0;
-    return amount / n;
-  }
-  // ===== End helper =====
-
-  Expense({
+  Income({
     required this.id,
     required this.ownerId,
     required this.title,
     required this.amount,
-    required this.category,
     required this.date,
-    required this.description,
+    this.description = '',
     this.sharedWith = const [],
   });
 
-  Expense copyWith({
+  Income copyWith({
     String? id,
     String? ownerId,
     String? title,
     double? amount,
-    String? category,
     DateTime? date,
     String? description,
     List<String>? sharedWith,
   }) {
-    return Expense(
+    return Income(
       id: id ?? this.id,
       ownerId: ownerId ?? this.ownerId,
       title: title ?? this.title,
       amount: amount ?? this.amount,
-      category: category ?? this.category,
       date: date ?? this.date,
       description: description ?? this.description,
       sharedWith: sharedWith ?? this.sharedWith,
     );
   }
 
-  factory Expense.fromJson(Map<String, dynamic> j) => Expense(
+  factory Income.fromJson(Map<String, dynamic> j) => Income(
         id: j['id'] as String,
         ownerId: (j['ownerId'] as String?) ?? '',
         title: j['title'] as String,
         amount: (j['amount'] as num).toDouble(),
-        category: j['category'] as String,
         date: DateTime.parse(j['date'] as String),
         description: j['description'] as String? ?? '',
-        sharedWith: (j['sharedWith'] as List?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            [],
+        sharedWith: (j['sharedWith'] as List?)?.map((e) => e.toString()).toList() ?? [],
       );
 
   Map<String, dynamic> toJson() => {
@@ -83,7 +52,6 @@ class Expense {
         'ownerId': ownerId,
         'title': title,
         'amount': amount,
-        'category': category,
         'date': date.toIso8601String(),
         'description': description,
         'sharedWith': sharedWith,
