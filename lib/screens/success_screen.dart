@@ -33,7 +33,7 @@ class SuccessScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Berhasil Menambah Pengeluaran.', // Teks yang lebih baik
+                    'Successfully Increased Expenditures.', // Teks yang lebih baik
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey, fontSize: 16),
                   ),
