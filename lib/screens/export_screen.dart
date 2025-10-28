@@ -23,7 +23,7 @@ class ExportScreen extends StatelessWidget {
     // Menyiapkan data untuk CSV
     // Baris pertama adalah header
     List<List<dynamic>> rows = [
-      ['Judul', 'Jumlah', 'Kategori', 'Tanggal', 'Deskripsi']
+      ['Title', 'Amount', 'Category', 'Date','Description'],
     ];
 
     // Baris selanjutnya adalah data expense
@@ -41,7 +41,7 @@ class ExportScreen extends StatelessWidget {
     String csv = const ListToCsvConverter().convert(rows);
 
     // Menggunakan share_plus untuk membagikan string sebagai file
-    await Share.share(csv, subject: 'Export_Pengeluaran.csv');
+    await Share.share(csv, subject: 'Export_Expenses.csv');
   }
 
   // Fungsi untuk handle export ke PDF
@@ -49,7 +49,7 @@ class ExportScreen extends StatelessWidget {
     final List<Expense> expenses = ExpenseService.instance.expenses;
     if (expenses.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak ada data untuk diexport.')),
+        const SnackBar(content: Text('There is no data to export.')),
       );
       return;
     }
@@ -57,12 +57,12 @@ class ExportScreen extends StatelessWidget {
     // Memanggil fungsi export PDF yang sudah ada
     await ExportPdf.exportFromList(
       expenses,
-      filename: 'semua_pengeluaran.pdf',
+      filename: 'all_expenses.pdf',
     );
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PDF siap. Silakan simpan/print.')),
+        const SnackBar(content: Text('The PDF is ready. Please save/print it.')),
       );
     }
   }
@@ -83,13 +83,13 @@ class ExportScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Pilih Format Export',
+              'Select Export Format',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             const Text(
-              'Anda dapat menyimpan semua data pengeluaran Anda dalam format PDF untuk laporan atau CSV untuk diolah lebih lanjut di spreadsheet.',
+              'You can save all your expense data in PDF format for reporting or CSV format for further processing in a spreadsheet.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey, fontSize: 16),
             ),
@@ -98,7 +98,7 @@ class ExportScreen extends StatelessWidget {
             // Tombol Export PDF
             ElevatedButton.icon(
               icon: const Icon(Icons.picture_as_pdf_outlined),
-              label: const Text('Export sebagai PDF'),
+              label: const Text('Export As PDF'),
               onPressed: () => _exportAsPdf(context),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -111,7 +111,7 @@ class ExportScreen extends StatelessWidget {
             // Tombol Export CSV
             ElevatedButton.icon(
               icon: const Icon(Icons.grid_on_outlined),
-              label: const Text('Export sebagai CSV'),
+              label: const Text('Export As CSV'),
               onPressed: () => _exportAsCsv(context),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),

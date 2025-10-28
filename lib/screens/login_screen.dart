@@ -1,5 +1,7 @@
+// lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/user_directory_service.dart'; // <-- penting
 import 'home_screen.dart';
 import 'register_screen.dart';
 
@@ -10,11 +12,9 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Controller & State dari kode lama Anda
   final _emailC = TextEditingController();
   final _passC  = TextEditingController();
   bool _loading = false;
-  // State _isPasswordVisible tidak lagi dibutuhkan karena desain baru tidak ada ikon mata
 
   @override
   void dispose() {
@@ -23,7 +23,12 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Fungsi _doLogin dari kode lama Anda (tidak ada yang diubah)
+  String _usernameFromEmail(String email) {
+    // ambil prefix email, ke lowercase, buang selain a-z0-9._-
+    final base = email.trim().toLowerCase().split('@').first;
+    return base.replaceAll(RegExp(r'[^a-z0-9._-]'), '-');
+  }
+
   Future<void> _doLogin() async {
     setState(() => _loading = true);
 
@@ -33,24 +38,34 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (!mounted) return;
-
     setState(() => _loading = false);
 
     if (ok) {
+      // ---> upsert ke direktori user (supaya bisa ditemukan saat share)
+      final u = AuthService.instance.currentUser!;
+      final username = _usernameFromEmail(u.email);
+
+      UserDirectoryService.instance.upsert(
+        id: u.id,
+        username: username,
+        name: u.name ?? u.email,
+        email: u.email,
+      );
+
+      // lanjut ke home
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email atau password salah')),
+        const SnackBar(content: Text('Incorrect email or password')),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // [UI-UPDATE] Menggunakan Scaffold dengan background putih polos
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -58,21 +73,14 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Jarak dari atas layar
             const SizedBox(height: 100),
-
-            // [UI-UPDATE] Judul "Login" di dalam body
             const Text(
               'Login',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 60),
 
-            // [UI-UPDATE] TextField Email disederhanakan (tanpa ikon)
             TextField(
               controller: _emailC,
               keyboardType: TextInputType.emailAddress,
@@ -85,10 +93,9 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 20),
 
-            // [UI-UPDATE] TextField Password disederhanakan (tanpa ikon mata)
             TextField(
               controller: _passC,
-              obscureText: true, // Kembali ke obscureText standar
+              obscureText: true,
               decoration: InputDecoration(
                 labelText: 'Password',
                 border: OutlineInputBorder(
@@ -98,11 +105,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 40),
 
-            // [UI-UPDATE] Tombol diubah menjadi ElevatedButton dengan warna pink
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 237, 0, 217), // Warna utama baru
-                foregroundColor: Colors.white, // Warna teks
+                backgroundColor: const Color.fromARGB(255, 237, 0, 217),
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
@@ -125,21 +131,19 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 16),
 
-            // [UI-UPDATE] Tombol link dengan warna pink
             TextButton(
-              onPressed: () { /* TODO: Fitur Lupa Kata Sandi */ },
+              onPressed: () {},
               child: const Text(
-                'Lupa Kata Sandi?',
+                'Forgot your password?',
                 style: TextStyle(color: Color.fromARGB(255, 255, 0, 255)),
               ),
             ),
             const SizedBox(height: 24),
 
-            // [UI-UPDATE] Link Sign Up dengan style baru
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("Belum Punya Akun?"),
+                const Text("Don't have an account yet?"),
                 TextButton(
                   onPressed: () {
                     Navigator.push(
@@ -148,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     );
                   },
                   child: const Text(
-                    'Daftar Sekarang',
+                    'Register Now',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Color.fromARGB(255, 255, 0, 191),

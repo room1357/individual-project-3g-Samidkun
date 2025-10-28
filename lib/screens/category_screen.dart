@@ -33,7 +33,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    'Tambah Kategori Baru',
+                    'Add New Category',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
@@ -41,7 +41,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   TextField(
                     controller: nameC,
                     decoration: InputDecoration(
-                      labelText: 'Nama Kategori',
+                      labelText: 'Category Name',
                       filled: true,
                       fillColor: Colors.grey[100],
                       border: OutlineInputBorder(
@@ -74,7 +74,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       if (name.isEmpty || iconKey == null) {
                         // Handle validasi, mungkin dengan menampilkan pesan
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Nama dan ikon wajib diisi.')),
+                          const SnackBar(content: Text('Name and icon must be filled in.')),
                         );
                         return;
                       }
@@ -84,13 +84,13 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       
                       if (!ok && mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Nama kategori sudah ada (duplikat).')),
+                          const SnackBar(content: Text('The category name already exists (duplicate).')),
                         );
                       } else {
                         Navigator.pop(context); // Tutup bottom sheet setelah berhasil
                       }
                     },
-                    child: const Text('Simpan Kategori'),
+                    child: const Text('Save Category'),
                   ),
                   const SizedBox(height: 20),
                 ],
@@ -108,7 +108,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kelola Kategori'),
+        title: const Text('Manage Categories'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -126,7 +126,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
           final cats = svc.categories.where((c) => c.ownerId != 'global').toList();
 
           if (cats.isEmpty) {
-            return const Center(child: Text('Belum ada kategori. Tekan tombol + untuk menambah.'));
+            return const Center(child: Text('No categories yet. Press the + button to add one.'));
           }
 
           return ListView.separated(
@@ -148,16 +148,16 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   return await showDialog<bool>(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('Konfirmasi Hapus'),
-                      content: Text('Hapus kategori "${c.name}"?'),
+                      title: const Text('Confirm Delete'),
+                      content: Text('Delete Category "${c.name}"?'),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(false),
-                          child: const Text('Batal'),
+                          child: const Text('Cancel'),
                         ),
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(true),
-                          child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+                          child: const Text('Delete', style: TextStyle(color: Colors.red)),
                         ),
                       ],
                     ),
@@ -167,7 +167,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   final ok = svc.deleteCategory(c.id);
                   if (!ok && mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Tidak bisa hapus (kategori sedang dipakai).')),
+                      const SnackBar(content: Text('Cannot delete (category is currently in use).')),
                     );
                   }
                 },

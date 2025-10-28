@@ -46,22 +46,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               OnboardingPageContent(
                 image: 'assets/images/onboarding1.png', // GANTI DENGAN GAMBAR ANDA
                 iconData: Icons.monetization_on,        // GANTI DENGAN IKON ANDA
-                title: 'Lacak Setiap Rupiah',
-                description: 'Catat semua pemasukan dan pengeluaran Anda dengan mudah di satu tempat.',
+                title: 'Track Every Rupiah',
+                description: 'Easily record all your income and expenses in one place.',
               ),
               // Halaman 2
               OnboardingPageContent(
                 image: 'assets/images/onboarding2.png', // GANTI DENGAN GAMBAR ANDA
                 iconData: Icons.category,                // GANTI DENGAN IKON ANDA
-                title: 'Kategori yang Jelas',
-                description: 'Kelompokkan transaksi Anda ke dalam kategori untuk analisis yang lebih baik.',
+                title: 'Clear Categories',
+                description: 'Group your transactions into categories for better analysis.',
               ),
               // Halaman 3
               OnboardingPageContent(
                 image: 'assets/images/onboarding3.png', // GANTI DENGAN GAMBAR ANDA
                 iconData: Icons.auto_graph,              // GANTI DENGAN IKON ANDA
-                title: 'Pahami Keuanganmu',
-                description: 'Lihat laporan visual untuk membantu Anda mengambil keputusan finansial yang lebih cerdas.',
+                title: 'Understand Your Finances',
+                description: 'Check out visual reports to help you make smarter financial decisions.',
               ),
             ],
           ),

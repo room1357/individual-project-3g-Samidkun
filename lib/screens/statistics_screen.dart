@@ -1,12 +1,13 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import '../models/expense.dart';
-import '../services/expense_service.dart';
-import '../utils/category_style.dart';
-import '../utils/currency_utils.dart';
 import 'dart:math';
 
-// Enum sekarang hanya punya 2 pilihan
+import '../models/expense.dart';
+import '../services/expense_service.dart';
+import '../services/income_service.dart';
+import '../utils/category_style.dart';
+import '../utils/currency_utils.dart';
+
 enum ChartView { bulanan, tahunan }
 
 class StatisticsScreen extends StatefulWidget {
@@ -21,43 +22,42 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final svc = ExpenseService.instance;
+    final expSvc = ExpenseService.instance;
+    final incSvc = IncomeService.instance;
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Statistik Pengeluaran'),
+        title: const Text('Financial Statistics'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
         centerTitle: true,
       ),
       body: AnimatedBuilder(
-        animation: svc,
+        animation: Listenable.merge([expSvc, incSvc]),
         builder: (context, _) {
-          final allExpenses = svc.expenses;
-          final totalExpense = svc.totalAll;
+          final allExpenses = expSvc.expenses;
+          final totalExpense = expSvc.totalAll;
 
-          final highestExpenses = List.of(allExpenses);
-          highestExpenses.sort((a, b) => b.amount.compareTo(a.amount));
+          final highestExpenses = List.of(allExpenses)
+            ..sort((a, b) => b.amount.compareTo(a.amount));
 
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             children: [
               const SizedBox(height: 20),
-              _buildTotalCard(totalExpense),
-              const SizedBox(height: 30),
+              _buildTotalExpenseCard(totalExpense),
+              const SizedBox(height: 24),
               _buildFilterButtons(),
-              const SizedBox(height: 20),
-              SizedBox(
-                height: 200,
-                child: _buildChart(svc),
-              ),
-              const SizedBox(height: 40),
-              const Text('Pengeluaran Tertinggi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
+              SizedBox(height: 260, child: _buildChartCard(expSvc, incSvc)),
+              const SizedBox(height: 28),
+              const Text('Highest Expenses',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
               if (highestExpenses.isEmpty)
-                const Center(child: Text('Belum ada data.'))
+                const Center(child: Text('No data yet.'))
               else
                 ListView.builder(
                   itemCount: highestExpenses.take(5).length,
@@ -68,6 +68,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     return _buildExpenseListItem(expense);
                   },
                 ),
+              const SizedBox(height: 16),
             ],
           );
         },
@@ -75,68 +76,172 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
+  // ---------------- UI kecil ----------------
+
   Widget _buildFilterButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildFilterChip('Bulanan', ChartView.bulanan),
+        _filterChip('Monthly', ChartView.bulanan),
         const SizedBox(width: 12),
-        _buildFilterChip('Tahunan', ChartView.tahunan),
+        _filterChip('Yearly', ChartView.tahunan),
       ],
     );
   }
 
-  Widget _buildFilterChip(String label, ChartView view) {
+  Widget _filterChip(String label, ChartView view) {
     final bool isSelected = _selectedView == view;
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
-      onSelected: (selected) {
-        if (selected) setState(() => _selectedView = view);
+      onSelected: (sel) {
+        if (sel) setState(() => _selectedView = view);
       },
       selectedColor: Colors.pinkAccent.withOpacity(0.1),
-      labelStyle: TextStyle(color: isSelected ? Colors.pinkAccent : Colors.black54, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.pinkAccent : Colors.black54,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: isSelected ? Colors.pinkAccent : Colors.grey.shade300),
+        side: BorderSide(
+          color: isSelected ? Colors.pinkAccent : Colors.grey.shade300,
+        ),
       ),
       backgroundColor: Colors.white,
     );
   }
 
-  // [DIUBAH] Switch sekarang ditambahkan 'default'
-  Widget _buildChart(ExpenseService svc) {
+  // ---------------- Chart Card + Legend ----------------
+
+  Widget _buildChartCard(ExpenseService expSvc, IncomeService incSvc) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          )
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(child: _buildChart(expSvc, incSvc)),
+          Positioned(
+            right: 8,
+            top: 6,
+            child: _legendInline(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _legendInline() {
+    Widget item(Color c, String t) => Row(
+          children: [
+            Container(
+              width: 14,
+              height: 3,
+              decoration:
+                  BoxDecoration(color: c, borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(width: 6),
+            Text(t, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+          ],
+        );
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        item(Colors.blue, 'Income'),
+        const SizedBox(width: 12),
+        item(Colors.orange, 'Expenses'),
+      ],
+    );
+  }
+
+  // ---------------- Chart core ----------------
+
+  Widget _buildChart(ExpenseService expSvc, IncomeService incSvc) {
     switch (_selectedView) {
       case ChartView.bulanan:
-        final data = svc.totalPerMonth;
-        final spots = List.generate(12, (i) => FlSpot((i + 1).toDouble(), data[i + 1] ?? 0));
-        return LineChart(_buildChartData(spots, data.values, _bottomTitlesMonthly));
-        
-      case ChartView.tahunan:
-        final data = svc.totalPerYear;
-        if (data.keys.isEmpty) return const Center(child: Text('Tidak ada data tahunan.'));
-        
-        final sortedYears = data.keys.toList()..sort();
-        final minYear = sortedYears.first;
-        final maxYear = sortedYears.last;
+        final expMap = expSvc.totalPerMonth; // {1..12 -> double}
+        final incMap = incSvc.totalPerMonth;
 
-        final spots = <FlSpot>[];
-        for (int year = minYear; year <= maxYear; year++) {
-          spots.add(FlSpot(year.toDouble(), data[year] ?? 0));
+        final expSpots = List.generate(
+            12, (i) => FlSpot((i + 1).toDouble(), expMap[i + 1] ?? 0));
+        final incSpots = List.generate(
+            12, (i) => FlSpot((i + 1).toDouble(), incMap[i + 1] ?? 0));
+
+        final allValues = [...expMap.values, ...incMap.values];
+
+        return LineChart(_buildChartDataTwoLines(
+          incSpots: incSpots,
+          expSpots: expSpots,
+          allValues: allValues,
+          bottomTitles: _bottomTitlesMonthlyRotated,
+        ));
+
+      case ChartView.tahunan:
+        final expMapY = expSvc.totalPerYear; // {year -> double}
+        final incMapY = incSvc.totalPerYear;
+
+        if (expMapY.isEmpty && incMapY.isEmpty) {
+          return const Center(child: Text('No annual data available.'));
         }
-        return LineChart(_buildChartData(spots, data.values, _bottomTitlesYearly));
+
+        final years = <int>{...expMapY.keys, ...incMapY.keys}.toList()..sort();
+        final minYear = years.first;
+        final maxYear = years.last;
+
+        final expSpots = <FlSpot>[];
+        final incSpots = <FlSpot>[];
+        for (int y = minYear; y <= maxYear; y++) {
+          expSpots.add(FlSpot(y.toDouble(), expMapY[y] ?? 0));
+          incSpots.add(FlSpot(y.toDouble(), incMapY[y] ?? 0));
+        }
+
+        final allValues = [...expMapY.values, ...incMapY.values];
+
+        return LineChart(_buildChartDataTwoLines(
+          incSpots: incSpots,
+          expSpots: expSpots,
+          allValues: allValues,
+          bottomTitles: _bottomTitlesYearly,
+        ));
     }
   }
 
-  // [DILENGKAPI] Bagian dalam LineChartBarData ditambahkan
-  LineChartData _buildChartData(List<FlSpot> spots, Iterable<double> values, SideTitles bottomTitles) {
-    final chartColor = Colors.pinkAccent;
+  LineChartData _buildChartDataTwoLines({
+    required List<FlSpot> incSpots,
+    required List<FlSpot> expSpots,
+    required Iterable<double> allValues,
+    required SideTitles bottomTitles,
+  }) {
+    const incomeColor = Colors.blue;
+    const expenseColor = Colors.orange;
+
     double maxY = 0;
-    if (values.isNotEmpty) maxY = values.reduce(max);
+    if (allValues.isNotEmpty) {
+      maxY = allValues.reduce(max);
+    }
     maxY = maxY == 0 ? 1000 : maxY * 1.2;
+    final interval = maxY / 4; // 4 grid horizontal
 
     return LineChartData(
-      gridData: const FlGridData(show: false),
+      gridData: FlGridData(
+        show: true,
+        drawVerticalLine: false,
+        horizontalInterval: interval == 0 ? 1 : interval,
+        getDrawingHorizontalLine: (v) => FlLine(
+          color: Colors.black12.withOpacity(0.15),
+          strokeWidth: 1,
+        ),
+      ),
       titlesData: FlTitlesData(
         bottomTitles: AxisTitles(sideTitles: bottomTitles),
         leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -148,15 +253,30 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       maxY: maxY,
       lineBarsData: [
         LineChartBarData(
-          spots: spots,
+          spots: incSpots,
           isCurved: true,
-          color: chartColor,
+          color: incomeColor,
           barWidth: 3,
-          dotData: const FlDotData(show: false),
+          dotData: const FlDotData(show: true),
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
-              colors: [chartColor.withOpacity(0.5), chartColor.withOpacity(0.0)],
+              colors: [incomeColor.withOpacity(0.25), incomeColor.withOpacity(0.0)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
+        LineChartBarData(
+          spots: expSpots,
+          isCurved: true,
+          color: expenseColor,
+          barWidth: 3,
+          dotData: const FlDotData(show: true),
+          belowBarData: BarAreaData(
+            show: true,
+            gradient: LinearGradient(
+              colors: [expenseColor.withOpacity(0.25), expenseColor.withOpacity(0.0)],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -166,38 +286,64 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  SideTitles get _bottomTitlesMonthly => SideTitles(
-    showTitles: true,
-    reservedSize: 30,
-    interval: 1,
-    getTitlesWidget: (value, meta) {
-      const style = TextStyle(color: Colors.grey, fontSize: 12);
-      String text = '';
-      switch (value.toInt()) {
-        case 1: text = 'Jan'; break; case 2: text = 'Feb'; break;
-        case 3: text = 'Mar'; break; case 4: text = 'Apr'; break;
-        case 5: text = 'Mei'; break; case 6: text = 'Jun'; break;
-        case 7: text = 'Jul'; break; case 8: text = 'Agu'; break;
-        case 9: text = 'Sep'; break; case 10: text = 'Okt'; break;
-        case 11: text = 'Nov'; break; case 12: text = 'Des'; break;
-        default: text = ''; break;
-      }
-      return SideTitleWidget(axisSide: meta.axisSide, child: Text(text, style: style));
-    },
-  );
-  
-  SideTitles get _bottomTitlesYearly => SideTitles(
-    showTitles: true,
-    reservedSize: 30,
-    interval: 1,
-    getTitlesWidget: (value, meta) {
-      const style = TextStyle(color: Colors.grey, fontSize: 12);
-      return SideTitleWidget(axisSide: meta.axisSide, child: Text(value.toInt().toString().substring(2), style: style));
-    },
-  );
+  // ---------------- Axis titles ----------------
 
-  // [DILENGKAPI] Widget-widget helper ditambahkan kembali
-  Widget _buildTotalCard(double total) {
+  SideTitles get _bottomTitlesMonthlyRotated => SideTitles(
+        showTitles: true,
+        reservedSize: 48, // ruang ekstra karena dimiringkan
+        interval: 1,
+        getTitlesWidget: (value, meta) {
+          const months = [
+            'January',
+            'February',
+            'March',
+            'April',
+            'May',
+            'June',
+            'July',
+            'August',
+            'September',
+            'October',
+            'November',
+            'December'
+          ];
+          final i = value.toInt();
+          if (i < 1 || i > 12) return const SizedBox.shrink();
+          return SideTitleWidget(
+            axisSide: meta.axisSide,
+            space: 10,
+            child: Transform.rotate(
+              angle: -0.75, // ~ -43°
+              child: Text(
+                months[i - 1],
+                style: const TextStyle(color: Colors.black54, fontSize: 10),
+                overflow: TextOverflow.visible,
+                softWrap: false,
+              ),
+            ),
+          );
+        },
+      );
+
+  SideTitles get _bottomTitlesYearly => SideTitles(
+        showTitles: true,
+        reservedSize: 30,
+        interval: 1,
+        getTitlesWidget: (value, meta) {
+          const style = TextStyle(color: Colors.grey, fontSize: 12);
+          final yr = value.toInt();
+          final txt =
+              yr.toString().length >= 4 ? yr.toString().substring(2) : yr.toString();
+          return SideTitleWidget(
+            axisSide: meta.axisSide,
+            child: Text(txt, style: style),
+          );
+        },
+      );
+
+  // ---------------- Card & list item ----------------
+
+  Widget _buildTotalExpenseCard(double total) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -210,11 +356,13 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Total Semua Pengeluaran', style: TextStyle(color: Colors.white70, fontSize: 16)),
+              const Text('Total All Expenses',
+                  style: TextStyle(color: Colors.white70, fontSize: 16)),
               const SizedBox(height: 8),
               Text(
                 rp(total, context),
-                style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -243,11 +391,14 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(expense.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text(expense.formattedDate, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(expense.formattedDate,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
               ],
             ),
           ),
-          Text('- ${rp(expense.amount, context)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+          Text('- ${rp(expense.amount, context)}',
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
         ],
       ),
     );

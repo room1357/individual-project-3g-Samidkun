@@ -50,7 +50,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _pickAndSaveImage() async {
     final user = AuthService.instance.currentUser;
     if (user == null) {
-      _showSnackBar('Gagal: Anda tidak sedang login.', Colors.red);
+      _showSnackBar('Failed: You are not logged in.', Colors.red);
       return;
     }
 
@@ -76,7 +76,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     AuthService.instance.updateProfile(name: user.name, photoUrl: savedImage.path);
 
     // setState tidak lagi diperlukan karena AnimatedBuilder akan handle refresh
-    _showSnackBar('Foto profil berhasil diperbarui!', Colors.green);
+    _showSnackBar('Profile photo successfully updated!', Colors.green);
   }
 
   void _saveProfileChanges() {
@@ -85,32 +85,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final success = AuthService.instance.updateProfile(name: newName);
 
       if (success) {
-        _showSnackBar('Nama berhasil diperbarui!', Colors.green);
+        _showSnackBar('Name successfully updated!', Colors.green);
         FocusScope.of(context).unfocus();
       } else {
-        _showSnackBar('Gagal memperbarui profil.', Colors.red);
+        _showSnackBar('Failed to update profile.', Colors.red);
       }
     }
   }
 
   void _changePassword() {
     if (_newPasswordController.text.isEmpty) {
-      _showSnackBar('Password baru tidak boleh kosong.', Colors.orange);
+      _showSnackBar('The new password cannot be blank.', Colors.orange);
       return;
     }
     if (_newPasswordController.text != _confirmPasswordController.text) {
-      _showSnackBar('Password baru dan konfirmasi tidak cocok.', Colors.red);
+      _showSnackBar('The new password and confirmation do not match.', Colors.red);
       return;
     }
 
     final success = AuthService.instance.changePassword(_newPasswordController.text);
     if (success) {
-      _showSnackBar('Password berhasil diubah!', Colors.green);
+      _showSnackBar('Password successfully changed!', Colors.green);
       _newPasswordController.clear();
       _confirmPasswordController.clear();
       FocusScope.of(context).unfocus();
     } else {
-      _showSnackBar('Gagal mengubah password.', Colors.red);
+      _showSnackBar('Failed to change password.', Colors.red);
     }
   }
 
@@ -127,7 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Profil & Pengaturan'),
+        title: const Text('Profil & Setting'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -199,34 +199,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 32),
                   TextFormField(
                     controller: _nameController,
-                    decoration: _buildInputDecoration(label: 'Nama Lengkap', icon: Icons.person_outline),
-                    validator: (v) => (v == null || v.isEmpty) ? 'Nama tidak boleh kosong' : null,
+                    decoration: _buildInputDecoration(label: 'Full Name', icon: Icons.person_outline),
+                    validator: (v) => (v == null || v.isEmpty) ? 'The name field cannot be left blank.' : null,
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: _saveProfileChanges,
                     style: _buildButtonStyle(Colors.pinkAccent),
-                    child: const Text('Simpan Perubahan'),
+                    child: const Text('Save Changes'),
                   ),
                   const Divider(height: 60),
-                  const Text('Ganti Password', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text('Change Password', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _newPasswordController,
-                    decoration: _buildInputDecoration(label: 'Password Baru', icon: Icons.lock_outline),
+                    decoration: _buildInputDecoration(label: 'New Password', icon: Icons.lock_outline),
                     obscureText: true,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _confirmPasswordController,
-                    decoration: _buildInputDecoration(label: 'Konfirmasi Password Baru', icon: Icons.lock_reset_outlined),
+                    decoration: _buildInputDecoration(label: 'Confirm New Password', icon: Icons.lock_reset_outlined),
                     obscureText: true,
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: _changePassword,
                     style: _buildButtonStyle(Colors.deepPurple.shade400),
-                    child: const Text('Ubah Password'),
+                    child: const Text('Change Password'),
                   ),
                 ],
               ),
