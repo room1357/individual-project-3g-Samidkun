@@ -48,7 +48,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       ownerId: '',
       title: _titleC.text.trim(),
       amount: amt,
-      category: _category ?? 'Lainnya',
+      category: _category ?? 'Other',
       date: _date,
       description: _descC.text.trim(),
     );
@@ -79,7 +79,7 @@ Navigator.pushReplacement(
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.black,
-        title: const Text('Tambah Pengeluaran'),
+        title: const Text('Add Expense'),
         centerTitle: true,
       ),
       body: Form(
@@ -90,11 +90,11 @@ Navigator.pushReplacement(
             const SizedBox(height: 20),
 
             // [UI BARU] Field Pengeluaran (Judul)
-            _buildSectionTitle('Pengeluaran'),
+            _buildSectionTitle('Expense'),
             TextFormField(
               controller: _titleC,
               decoration: _buildInputDecoration(hintText: 'Name'),
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Nama pengeluaran wajib diisi' : null,
+              validator: (v) => (v == null || v.trim().isEmpty) ? 'The name of the expense must be filled in' : null,
             ),
             const SizedBox(height: 24),
 
@@ -105,7 +105,7 @@ Navigator.pushReplacement(
               onTap: _pickDate,
               controller: TextEditingController(text: '${_date.day}/${_date.month}/${_date.year}'),
               decoration: _buildInputDecoration(
-                hintText: 'Pilih Tanggal',
+                hintText: 'Choose Date',
                 suffixIcon: const Icon(Icons.calendar_month_outlined, color: Colors.grey),
               ),
             ),
@@ -122,7 +122,7 @@ Navigator.pushReplacement(
               ),
               validator: (v) {
                 final d = double.tryParse((v ?? '').replaceAll(',', '.'));
-                if (d == null || d <= 0) return 'Masukkan jumlah lebih dari 0';
+                if (d == null || d <= 0) return 'Enter a number greater than 0';
                 return null;
               },
             ),
@@ -135,12 +135,12 @@ Navigator.pushReplacement(
                 value: _category,
                 items: catItems.map((n) => DropdownMenuItem(value: n, child: Text(n))).toList(),
                 onChanged: (v) => setState(() => _category = v),
-                decoration: _buildInputDecoration(hintText: 'Pilih Kategori'),
-                validator: (v) => v == null ? 'Kategori wajib dipilih' : null,
+                decoration: _buildInputDecoration(hintText: 'Choose Category'),
+                validator: (v) => v == null ? 'Required fields' : null,
               )
             else
               // Fallback jika tidak ada kategori
-              const Text('Tidak ada kategori. Silakan tambah kategori terlebih dahulu.'),
+              const Text('There are no categories. Please add a category first.'),
             const SizedBox(height: 24),
 
             // [UI BARU] Field Deskripsi
@@ -149,7 +149,7 @@ Navigator.pushReplacement(
               controller: _descC,
               minLines: 3,
               maxLines: 5,
-              decoration: _buildInputDecoration(hintText: 'Deskripsi Tambahan'),
+              decoration: _buildInputDecoration(hintText: 'additional description'),
             ),
             const SizedBox(height: 40),
 
@@ -164,7 +164,7 @@ Navigator.pushReplacement(
                 ),
               ),
               onPressed: catItems.isEmpty ? null : _save,
-              child: const Text('Simpan Pengeluaran', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              child: const Text('Save Expense', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 20),
           ],
