@@ -1,16 +1,21 @@
-# individual_project_3g_samidkun_newest
+# Biodata Mahasiswa — Individual Project
 
-A new Flutter project.
+## Identitas
+- **Nama:** Dimas Arya Sadewa
+- **Kelas:** SIB-3G  
+- **NIM:** 2341760173
 
-## Getting Started
+## Tentang Saya
+Saya seorang mahasiswa Program Studi Sistem Informasi Bisnis di Politeknik Negeri Malang.  Saya tertarik pada pengembangan perangkat lunak dan aplikasi mobile dan ingin terus meningkatkan kemampuan saya dalam dunia nyata melalui proyek nyata. Saya juga aktif mengembangkan aplikasi berbasis Flutter saat mengikuti mata kuliah Pemrograman Mobile.
 
-This project is a starting point for a Flutter application.
+## Kontak
+- Email: dimasaryasadewa123@gmail.com  
 
-A few resources to get you started if this is your first Flutter project:
+---
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Tentang Proyek
+Tujuan proyek ini adalah untuk membuat aplikasi Flutter sederhana untuk tugas mata kuliah Pemrograman Mobile. Tujuannya adalah untuk mempelajari struktur proyek Flutter, manajemen state dasar, dan membuat UI yang responsif.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+💰 <Expense Manager> — Flutter Expense & Income Tracker
+
+Aplikasi Flutter untuk mencatat pengeluaran & pemasukan, melihat statistik, ekspor PDF, serta berbagi (read-only) semua pengeluaran ke pengguna lain menggunakan username. Mendukung IDR ↔ USD dengan kurs manual (opsi auto via API disiapkan sebagai roadmap).
