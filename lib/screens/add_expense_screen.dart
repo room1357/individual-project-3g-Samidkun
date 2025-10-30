@@ -73,104 +73,146 @@ Navigator.pushReplacement(
       _category = catItems.first;
     }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.black,
-        title: const Text('Add Expense'),
-        centerTitle: true,
+   return Scaffold(
+  backgroundColor: Colors.transparent,
+  appBar: AppBar(
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    foregroundColor: Colors.black,
+    title: const Text('Add Expense'),
+    centerTitle: true,
+  ),
+  body: Container(
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color(0xFFCCF1F7),
+          Color(0xFFCCDAF7),
+          Color(0xFFE3D3F7)    // putih di bawah
+        ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          children: [
-            const SizedBox(height: 20),
+    ),
+    child: Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        children: [
+          const SizedBox(height: 20),
 
-            // [UI BARU] Field Pengeluaran (Judul)
-            _buildSectionTitle('Expense'),
-            TextFormField(
-              controller: _titleC,
-              decoration: _buildInputDecoration(hintText: 'Name'),
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'The name of the expense must be filled in' : null,
+          // [UI BARU] Field Pengeluaran (Judul)
+          _buildSectionTitle('Expense'),
+          TextFormField(
+            controller: _titleC,
+            decoration: _buildInputDecoration(hintText: 'Name'),
+            validator: (v) => (v == null || v.trim().isEmpty)
+                ? 'The name of the expense must be filled in'
+                : null,
+          ),
+          const SizedBox(height: 24),
+
+          // [UI BARU] Field Tanggal
+          _buildSectionTitle('Date'),
+          TextFormField(
+            readOnly: true,
+            onTap: _pickDate,
+            controller: TextEditingController(
+              text: '${_date.day}/${_date.month}/${_date.year}',
             ),
-            const SizedBox(height: 24),
-
-            // [UI BARU] Field Tanggal
-            _buildSectionTitle('Date'),
-            TextFormField(
-              readOnly: true, // Membuat field tidak bisa diketik
-              onTap: _pickDate,
-              controller: TextEditingController(text: '${_date.day}/${_date.month}/${_date.year}'),
-              decoration: _buildInputDecoration(
-                hintText: 'Choose Date',
-                suffixIcon: const Icon(Icons.calendar_month_outlined, color: Colors.grey),
+            decoration: _buildInputDecoration(
+              hintText: 'Choose Date',
+              suffixIcon: const Icon(
+                Icons.calendar_month_outlined,
+                color: Colors.grey,
               ),
             ),
-            const SizedBox(height: 24),
+          ),
+          const SizedBox(height: 24),
 
-            // [UI BARU] Field Jumlah
-            _buildSectionTitle('Amount'),
-            TextFormField(
-              controller: _amountC,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: _buildInputDecoration(
-                hintText: '0',
-                prefix: const Text('Rp ', style: TextStyle(color: Colors.black)),
+          // [UI BARU] Field Jumlah
+          _buildSectionTitle('Amount'),
+          TextFormField(
+            controller: _amountC,
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            decoration: _buildInputDecoration(
+              hintText: '0',
+              prefix: const Text(
+                'Rp ',
+                style: TextStyle(color: Colors.black),
               ),
-              validator: (v) {
-                final d = double.tryParse((v ?? '').replaceAll(',', '.'));
-                if (d == null || d <= 0) return 'Enter a number greater than 0';
-                return null;
-              },
             ),
-            const SizedBox(height: 24),
-            
-            // [UI BARU] Field Kategori
-            _buildSectionTitle('Category'),
-            if (catItems.isNotEmpty)
-              DropdownButtonFormField<String>(
-                value: _category,
-                items: catItems.map((n) => DropdownMenuItem(value: n, child: Text(n))).toList(),
-                onChanged: (v) => setState(() => _category = v),
-                decoration: _buildInputDecoration(hintText: 'Choose Category'),
-                validator: (v) => v == null ? 'Required fields' : null,
-              )
-            else
-              // Fallback jika tidak ada kategori
-              const Text('There are no categories. Please add a category first.'),
-            const SizedBox(height: 24),
+            validator: (v) {
+              final d = double.tryParse((v ?? '').replaceAll(',', '.'));
+              if (d == null || d <= 0) return 'Enter a number greater than 0';
+              return null;
+            },
+          ),
+          const SizedBox(height: 24),
 
-            // [UI BARU] Field Deskripsi
-            _buildSectionTitle('Description (Optional)'),
-            TextFormField(
-              controller: _descC,
-              minLines: 3,
-              maxLines: 5,
-              decoration: _buildInputDecoration(hintText: 'additional description'),
+          // [UI BARU] Field Kategori
+          _buildSectionTitle('Category'),
+          if (catItems.isNotEmpty)
+            DropdownButtonFormField<String>(
+              value: _category,
+              items: catItems
+                  .map(
+                    (n) => DropdownMenuItem(
+                      value: n,
+                      child: Text(n),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (v) => setState(() => _category = v),
+              decoration:
+                  _buildInputDecoration(hintText: 'Choose Category'),
+              validator: (v) => v == null ? 'Required fields' : null,
+            )
+          else
+            const Text(
+              'There are no categories. Please add a category first.',
             ),
-            const SizedBox(height: 40),
+          const SizedBox(height: 24),
 
-            // [UI BARU] Tombol Simpan
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pinkAccent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
+          // [UI BARU] Field Deskripsi
+          _buildSectionTitle('Description (Optional)'),
+          TextFormField(
+            controller: _descC,
+            minLines: 3,
+            maxLines: 5,
+            decoration: _buildInputDecoration(
+              hintText: 'additional description',
+            ),
+          ),
+          const SizedBox(height: 40),
+
+          // [UI BARU] Tombol Simpan
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.pinkAccent,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
               ),
-              onPressed: catItems.isEmpty ? null : _save,
-              child: const Text('Save Expense', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
-            const SizedBox(height: 20),
-          ],
-        ),
+            onPressed: catItems.isEmpty ? null : _save,
+            child: const Text(
+              'Save Expense',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
-    );
+    ),
+  ),
+);
+
   }
 
   // --- Helper Widget untuk UI Baru ---

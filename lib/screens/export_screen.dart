@@ -1,5 +1,3 @@
-// File: lib/screens/export_screen.dart
-
 import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
@@ -10,7 +8,6 @@ import '../utils/export_utils.dart'; // Asumsi file export PDF Anda di sini
 class ExportScreen extends StatelessWidget {
   const ExportScreen({super.key});
 
-  // Fungsi untuk handle export ke CSV
   Future<void> _exportAsCsv(BuildContext context) async {
     final List<Expense> expenses = ExpenseService.instance.expenses;
     if (expenses.isEmpty) {
@@ -20,13 +17,10 @@ class ExportScreen extends StatelessWidget {
       return;
     }
 
-    // Menyiapkan data untuk CSV
-    // Baris pertama adalah header
     List<List<dynamic>> rows = [
-      ['Title', 'Amount', 'Category', 'Date','Description'],
+      ['Title', 'Amount', 'Category', 'Date', 'Description'],
     ];
 
-    // Baris selanjutnya adalah data expense
     for (var expense in expenses) {
       rows.add([
         expense.title,
@@ -37,14 +31,10 @@ class ExportScreen extends StatelessWidget {
       ]);
     }
 
-    // Mengubah list menjadi string CSV
     String csv = const ListToCsvConverter().convert(rows);
-
-    // Menggunakan share_plus untuk membagikan string sebagai file
     await Share.share(csv, subject: 'Export_Expenses.csv');
   }
 
-  // Fungsi untuk handle export ke PDF
   Future<void> _exportAsPdf(BuildContext context) async {
     final List<Expense> expenses = ExpenseService.instance.expenses;
     if (expenses.isEmpty) {
@@ -54,7 +44,6 @@ class ExportScreen extends StatelessWidget {
       return;
     }
 
-    // Memanggil fungsi export PDF yang sudah ada
     await ExportPdf.exportFromList(
       expenses,
       filename: 'all_expenses.pdf',
@@ -70,57 +59,78 @@ class ExportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Export Data'),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.black,
         elevation: 0,
+        centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Select Export Format',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'You can save all your expense data in PDF format for reporting or CSV format for further processing in a spreadsheet.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            ),
-            const Spacer(), // Mendorong tombol ke tengah
-            
-            // Tombol Export PDF
-            ElevatedButton.icon(
-              icon: const Icon(Icons.picture_as_pdf_outlined),
-              label: const Text('Export As PDF'),
-              onPressed: () => _exportAsPdf(context),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.red.shade400,
-                foregroundColor: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 16),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFCBF1F5), Color(0xFFD4C1EC)],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Select Export Format',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'You can save all your expense data in PDF format for reporting or CSV format for further processing in a spreadsheet.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.black87, fontSize: 16),
+                ),
+                const Spacer(),
 
-            // Tombol Export CSV
-            ElevatedButton.icon(
-              icon: const Icon(Icons.grid_on_outlined),
-              label: const Text('Export As CSV'),
-              onPressed: () => _exportAsCsv(context),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.green.shade600,
-                foregroundColor: Colors.white,
-              ),
+                // Tombol Export PDF
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.picture_as_pdf_outlined),
+                  label: const Text('Export As PDF'),
+                  onPressed: () => _exportAsPdf(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF9B5DE5), // Ungu
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: 4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Tombol Export CSV
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.table_chart_outlined),
+                  label: const Text('Export As CSV'),
+                  onPressed: () => _exportAsCsv(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade600,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: 4,
+                  ),
+                ),
+
+                const Spacer(),
+              ],
             ),
-            const Spacer(), // Mendorong tombol ke tengah
-          ],
+          ),
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'category_screen.dart';
 import 'expense_list_screen.dart';
@@ -88,6 +89,40 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+Widget _buildDrawerTile(IconData icon, String title, VoidCallback onTap) {
+  return ListTile(
+    leading: Icon(icon, color: Colors.purpleAccent),
+    title: Text(
+      title,
+      style: GoogleFonts.poppins(fontSize: 15),
+    ),
+    onTap: onTap,
+  );
+}
+BottomNavigationBarItem _buildNavItem(String label, dynamic icon) {
+  bool isSvg = icon is String;
+  return BottomNavigationBarItem(
+    icon: isSvg
+        ? SvgPicture.asset(
+            icon,
+            width: 24,
+            height: 24,
+            colorFilter: const ColorFilter.mode(Colors.grey, BlendMode.srcIn),
+          )
+        : Icon(icon),
+    activeIcon: isSvg
+        ? SvgPicture.asset(
+            icon,
+            width: 24,
+            height: 24,
+            colorFilter: const ColorFilter.mode(Colors.pinkAccent, BlendMode.srcIn),
+          )
+        : Icon(icon, color: Colors.pinkAccent),
+    label: label,
+  );
+}
+
+
   String _getAppBarTitle(int index) {
     switch (index) {
       case 0:
@@ -112,190 +147,136 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = AuthService.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(_getAppBarTitle(_selectedIndex)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        centerTitle: true,
+  extendBodyBehindAppBar: true,
+  backgroundColor: Colors.transparent,
+  appBar: AppBar(
+    title: Text(
+      _getAppBarTitle(_selectedIndex),
+      style: GoogleFonts.poppins(
+        fontWeight: FontWeight.w600,
+        fontSize: 20,
+        color: Colors.black87,
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            UserAccountsDrawerHeader(
-              accountName: Text(
-                user?.name ?? 'Username',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              accountEmail: Text(user?.email ?? 'email@pengguna.com'),
-              currentAccountPicture: CircleAvatar(
-                backgroundColor: Colors.white,
-                backgroundImage: _profileImagePath != null
-                    ? FileImage(File(_profileImagePath!))
-                    : null,
-                child: _profileImagePath == null
-                    ? Icon(Icons.person, size: 45, color: Colors.pink.shade300)
-                    : null,
-              ),
-              decoration: const BoxDecoration(
-                color: Colors.pinkAccent,
-              ),
+    ),
+    backgroundColor: Colors.white,
+    foregroundColor: Colors.black,
+    elevation: 0,
+    centerTitle: true,
+    actions: const [
+      Padding(
+        padding: EdgeInsets.only(right: 16),
+        child: Icon(Icons.account_balance_wallet_outlined,
+            color: Colors.purpleAccent),
+      ),
+    ],
+  ),
+  drawer: Drawer(
+    child: ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        UserAccountsDrawerHeader(
+          accountName: Text(
+            user?.name ?? 'Username',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: Colors.white,
             ),
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text('Profile'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                );
-              },
+          ),
+          accountEmail: Text(
+            user?.email ?? 'email@pengguna.com',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: Colors.white70,
             ),
-            ListTile(
-              leading: const Icon(Icons.settings_outlined),
-              title: const Text('Settings'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                );
-              },
+          ),
+          currentAccountPicture: CircleAvatar(
+            backgroundColor: Colors.white,
+            backgroundImage: _profileImagePath != null
+                ? FileImage(File(_profileImagePath!))
+                : null,
+            child: _profileImagePath == null
+                ? Icon(Icons.person, size: 45, color: Colors.pink.shade300)
+                : null,
+          ),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFFF8BD0), Color(0xFFB388EB)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            ListTile(
-              leading: const Icon(Icons.account_balance_wallet_outlined),
-              title: const Text('Balance'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const BalanceScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.share_outlined),
-              title: const Text('Share Expense'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ShareExpensesScreen()),
-                );
-              },
-            ),
-
-ListTile(
-  leading: const Icon(Icons.inbox_outlined),
-  title: const Text('Shared from others'),
-  onTap: () {
-    Navigator.pop(context);
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const SharedFromOthersScreen()));
-  },
-),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
-              onTap: () {
-                AuthService.instance.logout();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (route) => false,
-                );
-              },
-            ),
-          ],
+          ),
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: activeColor,
-        unselectedItemColor: inactiveColor,
-        items: <BottomNavigationBarItem>[
-          // 0: Home
-          BottomNavigationBarItem(
-            icon: SvgPicture.asset(
-              'assets/icons/home.svg',
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(inactiveColor, BlendMode.srcIn),
-            ),
-            activeIcon: SvgPicture.asset(
-              'assets/icons/home.svg',
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(activeColor, BlendMode.srcIn),
-            ),
-            label: 'Home',
-          ),
-          // 1: Income
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.savings_outlined),
-            activeIcon: const Icon(Icons.savings),
-            label: 'Income',
-          ),
-          // 2: Expenses
-          BottomNavigationBarItem(
-            icon: SvgPicture.asset(
-              'assets/icons/expenses.svg',
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(inactiveColor, BlendMode.srcIn),
-            ),
-            activeIcon: SvgPicture.asset(
-              'assets/icons/expenses.svg',
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(activeColor, BlendMode.srcIn),
-            ),
-            label: 'Expenses',
-          ),
-          // 3: Categories
-          BottomNavigationBarItem(
-            icon: SvgPicture.asset(
-              'assets/icons/category.svg',
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(inactiveColor, BlendMode.srcIn),
-            ),
-            activeIcon: SvgPicture.asset(
-              'assets/icons/category.svg',
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(activeColor, BlendMode.srcIn),
-            ),
-            label: 'Categories',
-          ),
-          // 4: Stats
-          BottomNavigationBarItem(
-            icon: SvgPicture.asset(
-              'assets/icons/stats.svg',
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(inactiveColor, BlendMode.srcIn),
-            ),
-            activeIcon: SvgPicture.asset(
-              'assets/icons/stats.svg',
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(activeColor, BlendMode.srcIn),
-            ),
-            label: 'Stats',
-          ),
+        _buildDrawerTile(Icons.person_outline, 'Profile', () {
+          Navigator.pop(context);
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+        }),
+        _buildDrawerTile(Icons.settings_outlined, 'Settings', () {
+          Navigator.pop(context);
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+        }),
+        _buildDrawerTile(Icons.account_balance_wallet_outlined, 'Balance', () {
+          Navigator.pop(context);
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const BalanceScreen()));
+        }),
+        _buildDrawerTile(Icons.share_outlined, 'Share Expense', () {
+          Navigator.pop(context);
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const ShareExpensesScreen()));
+        }),
+        _buildDrawerTile(Icons.inbox_outlined, 'Shared from others', () {
+          Navigator.pop(context);
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const SharedFromOthersScreen()));
+        }),
+        const Divider(),
+        _buildDrawerTile(Icons.logout, 'Logout', () {
+          AuthService.instance.logout();
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (route) => false,
+          );
+        }),
+      ],
+    ),
+  ),
+  bottomNavigationBar: BottomNavigationBar(
+    currentIndex: _selectedIndex,
+    onTap: _onItemTapped,
+    type: BottomNavigationBarType.fixed,
+    selectedFontSize: 12,
+    unselectedFontSize: 12,
+    selectedItemColor: Colors.pinkAccent,
+    unselectedItemColor: Colors.grey.shade500,
+    backgroundColor: Colors.white,
+    elevation: 8,
+    items: [
+      _buildNavItem('Home', 'assets/icons/home.svg'),
+      _buildNavItem('Income', Icons.savings),
+      _buildNavItem('Expenses', 'assets/icons/expenses.svg'),
+      _buildNavItem('Categories', 'assets/icons/category.svg'),
+      _buildNavItem('Stats', 'assets/icons/stats.svg'),
+    ],
+  ),
+  body: Container(
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFFCBF1F5), // Biru muda
+          Color(0xFFD4C1EC), // Ungu muda
         ],
       ),
-      body: IndexedStack(
+    ),
+    child: SafeArea(
+      child: IndexedStack(
         index: _selectedIndex,
         children: _widgetOptions,
       ),
-    );
+    ),
+  ),
+);
+
   }
 }
 
@@ -375,82 +356,73 @@ class DashboardContent extends StatelessWidget {
   // ---------- UI helpers ----------
 
   Widget _buildBalanceCard(
-    BuildContext context,
-    double balance,
-    double totalIncome,
-    double totalExpense,
-  ) {
-    final positive = balance >= 0;
+  BuildContext context,
+  double balance,
+  double totalIncome,
+  double totalExpense,
+) {
+  final positive = balance >= 0;
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: positive ? Colors.teal : Colors.red,
-        borderRadius: BorderRadius.circular(24),
+  return Container(
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: positive
+            ? [Colors.teal.shade400, Colors.teal.shade600]
+            : [Colors.red.shade400, Colors.red.shade600],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.account_balance_wallet_outlined,
-                  color: Colors.white70, size: 20),
-              SizedBox(width: 8),
-              Text('Balance',
-                  style: TextStyle(color: Colors.white70, fontSize: 16)),
-            ],
+      borderRadius: BorderRadius.circular(24),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: const [
+            Icon(Icons.account_balance_wallet_outlined,
+                color: Colors.white70, size: 20),
+            SizedBox(width: 8),
+            Text('Balance',
+                style: TextStyle(color: Colors.white70, fontSize: 16)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          rp(balance, context),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 36,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 8),
-          Text(
-            rp(balance, context),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _miniPill(
+              icon: Icons.south_west,
+              label: '+ ${rp(totalIncome, context)}',
+              color: Colors.greenAccent,
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _miniPill(
-                icon: Icons.south_west, // masuk
-                label: '+ ${rp(totalIncome, context)}',
-                color: Colors.green,
-              ),
-              const SizedBox(width: 8),
-              _miniPill(
-                icon: Icons.north_east, // keluar
-                label: '- ${rp(totalExpense, context)}',
-                color: Colors.red.shade300,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _miniPill({
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.25)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: Colors.white),
-          const SizedBox(width: 6),
-          Text(label, style: const TextStyle(color: Colors.white)),
-        ],
-      ),
-    );
-  }
+            _miniPill(
+              icon: Icons.north_east,
+              label: '- ${rp(totalExpense, context)}',
+              color: Colors.redAccent,
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
 
   void _showExpenseDetailDialog(BuildContext context, Expense expense) {
     showDialog(
@@ -541,4 +513,34 @@ class DashboardContent extends StatelessWidget {
       ),
     );
   }
+Widget _miniPill({
+  required IconData icon,
+  required String label,
+  required Color color,
+}) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.15), // efek soft dari warna
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: color.withOpacity(0.25)),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
 }

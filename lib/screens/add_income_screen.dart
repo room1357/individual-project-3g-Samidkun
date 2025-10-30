@@ -44,7 +44,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
     final amt = double.tryParse(_amountC.text.replaceAll(',', '.')) ?? 0;
     final inc = Income(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      ownerId: '', // akan diisi oleh service sesuai current user
+      ownerId: '',
       title: _titleC.text.trim(),
       amount: amt,
       date: _date,
@@ -53,7 +53,6 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
 
     svc.addIncome(inc);
 
-    // Arahkan ke layar sukses (sama seperti add expense)
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const IncomeSuccessScreen()),
@@ -63,121 +62,133 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black,
-        
         centerTitle: true,
+        foregroundColor: Colors.black,
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          children: [
-            const SizedBox(height: 20),
-
-            _sectionTitle('Title'),
-            TextFormField(
-              controller: _titleC,
-              decoration: _input(hintText: 'Examples: Salary, Bonus, Gift'),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Title must be filled in' : null,
-            ),
-            const SizedBox(height: 24),
-
-            _sectionTitle('Date'),
-            TextFormField(
-              readOnly: true,
-              onTap: _pickDate,
-              controller: TextEditingController(
-                text: '${_date.day}/${_date.month}/${_date.year}',
-              ),
-              decoration: _input(
-                hintText: 'Choose Date',
-                suffixIcon:
-                    const Icon(Icons.calendar_month_outlined, color: Colors.grey),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            _sectionTitle('Amount'),
-            TextFormField(
-              controller: _amountC,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: _input(
-                hintText: '0',
-                prefix: const Text('Rp ', style: TextStyle(color: Colors.black)),
-              ),
-              validator: (v) {
-                final d =
-                    double.tryParse((v ?? '').replaceAll(',', '.'));
-                if (d == null || d <= 0) return 'Enter a number > 0';
-                return null;
-              },
-            ),
-            const SizedBox(height: 24),
-
-            _sectionTitle('Description (Optional)'),
-            TextFormField(
-              controller: _descC,
-              minLines: 3,
-              maxLines: 5,
-              decoration: _input(hintText: 'Additional information'),
-            ),
-            const SizedBox(height: 40),
-
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green, // beda warna dari expense
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFB2F7EF), Color(0xFFCA9EFF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24),
+              children: [
+                _sectionTitle('Title'),
+                _textField(_titleC, hintText: 'Examples: Salary, Bonus, Gift',
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Title must be filled in' : null,
                 ),
-              ),
-              onPressed: _save,
-              child: const Text(
-                'Save Income',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
+                const SizedBox(height: 20),
+
+                _sectionTitle('Date'),
+                GestureDetector(
+                  onTap: _pickDate,
+                  child: AbsorbPointer(
+                    child: _textField(
+                      TextEditingController(text: '${_date.day}/${_date.month}/${_date.year}'),
+                      hintText: 'Choose Date',
+                      suffixIcon: const Icon(Icons.calendar_today_outlined, color: Colors.grey),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                _sectionTitle('Amount'),
+                _textField(
+                  _amountC,
+                  hintText: '0',
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  prefix: const Text('Rp ', style: TextStyle(color: Colors.black)),
+                  validator: (v) {
+                    final d = double.tryParse((v ?? '').replaceAll(',', '.'));
+                    if (d == null || d <= 0) return 'Enter a number > 0';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+
+                _sectionTitle('Description (Optional)'),
+                _textField(
+                  _descC,
+                  hintText: 'Additional information',
+                  minLines: 3,
+                  maxLines: 5,
+                ),
+                const SizedBox(height: 40),
+
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Colors.greenAccent.shade700,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  onPressed: _save,
+                  child: const Text(
+                    'Save Income',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  // Helpers UI
   Widget _sectionTitle(String title) => Padding(
         padding: const EdgeInsets.only(bottom: 8.0),
         child: Text(
           title,
           style: const TextStyle(
-              fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black54),
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
         ),
       );
 
-  InputDecoration _input({
+  Widget _textField(
+    TextEditingController controller, {
     required String hintText,
     Widget? suffixIcon,
     Widget? prefix,
+    TextInputType? keyboardType,
+    int? minLines,
+    int? maxLines,
+    String? Function(String?)? validator,
   }) {
-    return InputDecoration(
-      hintText: hintText,
-      prefix: prefix,
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: Colors.grey[100],
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        hintText: hintText,
+        filled: true,
+        fillColor: Colors.white,
+        suffixIcon: suffixIcon,
+        prefix: prefix,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
       ),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      validator: validator,
+      keyboardType: keyboardType,
+      minLines: minLines,
+      maxLines: maxLines ?? 1,
     );
   }
 }

@@ -25,55 +25,75 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final expSvc = ExpenseService.instance;
     final incSvc = IncomeService.instance;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Financial Statistics'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        centerTitle: true,
+   return Scaffold(
+  body: Container(
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFFCBF1FF), // biru muda
+          Color(0xFFD9CFFF), // ungu muda
+        ],
       ),
-      body: AnimatedBuilder(
-        animation: Listenable.merge([expSvc, incSvc]),
-        builder: (context, _) {
-          final allExpenses = expSvc.expenses;
-          final totalExpense = expSvc.totalAll;
+    ),
+    child: SafeArea(
+      child: Column(
+        children: [
+          AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            foregroundColor: Colors.black,
+            centerTitle: true,
+          ),
+          Expanded(
+            child: AnimatedBuilder(
+              animation: Listenable.merge([expSvc, incSvc]),
+              builder: (context, _) {
+                final allExpenses = expSvc.expenses;
+                final totalExpense = expSvc.totalAll;
+                final highestExpenses = List.of(allExpenses)
+                  ..sort((a, b) => b.amount.compareTo(a.amount));
 
-          final highestExpenses = List.of(allExpenses)
-            ..sort((a, b) => b.amount.compareTo(a.amount));
-
-          return ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            children: [
-              const SizedBox(height: 20),
-              _buildTotalExpenseCard(totalExpense),
-              const SizedBox(height: 24),
-              _buildFilterButtons(),
-              const SizedBox(height: 10),
-              SizedBox(height: 260, child: _buildChartCard(expSvc, incSvc)),
-              const SizedBox(height: 28),
-              const Text('Highest Expenses',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              if (highestExpenses.isEmpty)
-                const Center(child: Text('No data yet.'))
-              else
-                ListView.builder(
-                  itemCount: highestExpenses.take(5).length,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemBuilder: (context, index) {
-                    final expense = highestExpenses[index];
-                    return _buildExpenseListItem(expense);
-                  },
-                ),
-              const SizedBox(height: 16),
-            ],
-          );
-        },
+                return ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  children: [
+                    const SizedBox(height: 20),
+                    _buildTotalExpenseCard(totalExpense),
+                    const SizedBox(height: 24),
+                    _buildFilterButtons(),
+                    const SizedBox(height: 10),
+                    SizedBox(height: 260, child: _buildChartCard(expSvc, incSvc)),
+                    const SizedBox(height: 28),
+                    const Text(
+                      'Highest Expenses',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    if (highestExpenses.isEmpty)
+                      const Center(child: Text('No data yet.'))
+                    else
+                      ListView.builder(
+                        itemCount: highestExpenses.take(5).length,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemBuilder: (context, index) {
+                          final expense = highestExpenses[index];
+                          return _buildExpenseListItem(expense);
+                        },
+                      ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
-    );
+    ),
+  ),
+);
+
   }
 
   // ---------------- UI kecil ----------------
@@ -347,7 +367,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.pinkAccent,
+       color: Colors.white,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
@@ -357,12 +377,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('Total All Expenses',
-                  style: TextStyle(color: Colors.white70, fontSize: 16)),
+                  style: TextStyle(color: Color.fromARGB(255, 2, 2, 2), fontSize: 16)),
               const SizedBox(height: 8),
               Text(
                 rp(total, context),
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                    color: Colors.black, fontSize: 32, fontWeight: FontWeight.bold),
               ),
             ],
           ),
