@@ -12,7 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-
+  google_fonts: ^6.1.0
   smooth_page_indicator: ^1.1.0
   shared_preferences: ^2.2.3
   fl_chart: ^0.64.0
