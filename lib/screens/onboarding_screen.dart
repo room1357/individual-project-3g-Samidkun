@@ -1,10 +1,9 @@
-// lib/screens/onboarding_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import 'login_screen.dart'; // Import login screen
+import 'login_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -31,95 +30,109 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // PageView untuk halaman yang bisa di-swipe
-          PageView(
-            controller: _controller,
-            onPageChanged: (index) {
-              setState(() {
-                _isLastPage = index == 2;
-              });
-            },
-            children: const [
-              // Halaman 1
-              OnboardingPageContent(
-                image: 'assets/images/onboarding1.png', // GANTI DENGAN GAMBAR ANDA
-                iconData: Icons.monetization_on,        // GANTI DENGAN IKON ANDA
-                title: 'Track Every Rupiah',
-                description: 'Easily record all your income and expenses in one place.',
-              ),
-              // Halaman 2
-              OnboardingPageContent(
-                image: 'assets/images/onboarding2.png', // GANTI DENGAN GAMBAR ANDA
-                iconData: Icons.category,                // GANTI DENGAN IKON ANDA
-                title: 'Clear Categories',
-                description: 'Group your transactions into categories for better analysis.',
-              ),
-              // Halaman 3
-              OnboardingPageContent(
-                image: 'assets/images/onboarding3.png', // GANTI DENGAN GAMBAR ANDA
-                iconData: Icons.auto_graph,              // GANTI DENGAN IKON ANDA
-                title: 'Understand Your Finances',
-                description: 'Check out visual reports to help you make smarter financial decisions.',
-              ),
-            ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFB2F7EF), Color(0xFFB388EB)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-
-          // Indikator titik-titik dan tombol di bagian bawah
-          Container(
-            alignment: const Alignment(0, 0.9), // Sedikit naikkan posisi
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // Tombol "Skip"
-                TextButton(
-                  onPressed: () => _controller.jumpToPage(2),
-                  child: const Text('SKIP'),
+        ),
+        child: Stack(
+          children: [
+            PageView(
+              controller: _controller,
+              onPageChanged: (index) {
+                setState(() {
+                  _isLastPage = index == 2;
+                });
+              },
+              children: const [
+                OnboardingPageContent(
+                  image: 'assets/images/onboarding1.png',
+                  iconData: Icons.monetization_on,
+                  title: 'Track Every Rupiah',
+                  description: 'Easily record all your income and expenses in one place.',
                 ),
-
-                // Indikator titik-titik
-                SmoothPageIndicator(
-                  controller: _controller,
-                  count: 3,
-                  effect: const WormEffect(
-                    spacing: 16,
-                    dotColor: Colors.black26,
-                    activeDotColor: Colors.deepPurple,
-                  ),
+                OnboardingPageContent(
+                  image: 'assets/images/onboarding2.png',
+                  iconData: Icons.category,
+                  title: 'Clear Categories',
+                  description: 'Group your transactions into categories for better analysis.',
                 ),
-
-                // Tombol "Next" atau "Done"
-                _isLastPage
-                    ? TextButton(
-                        onPressed: () async {
-                          await _onboardingFinished();
-                          if (mounted) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (_) => const LoginScreen()),
-                            );
-                          }
-                        },
-                        child: const Text('DONE'),
-                      )
-                    : TextButton(
-                        onPressed: () => _controller.nextPage(
-                          duration: const Duration(milliseconds: 500),
-                          curve: Curves.easeIn,
-                        ),
-                        child: const Text('NEXT'),
-                      ),
+                OnboardingPageContent(
+                  image: 'assets/images/onboarding3.png',
+                  iconData: Icons.auto_graph,
+                  title: 'Understand Your Finances',
+                  description: 'Check out visual reports to help you make smarter financial decisions.',
+                ),
               ],
             ),
-          ),
-        ],
+
+            // Controls
+            Container(
+              alignment: const Alignment(0, 0.9),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // SKIP
+                  TextButton(
+                    onPressed: () => _controller.jumpToPage(2),
+                    child: Text(
+                      'SKIP',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+
+                  // Indicator
+                  SmoothPageIndicator(
+                    controller: _controller,
+                    count: 3,
+                    effect: const WormEffect(
+                      spacing: 16,
+                      dotColor: Colors.white38,
+                      activeDotColor: Colors.white,
+                    ),
+                  ),
+
+                  // NEXT or DONE
+                  TextButton(
+                    onPressed: _isLastPage
+                        ? () async {
+                            await _onboardingFinished();
+                            if (mounted) {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                              );
+                            }
+                          }
+                        : () => _controller.nextPage(
+                              duration: const Duration(milliseconds: 500),
+                              curve: Curves.easeInOut,
+                            ),
+                    child: Text(
+                      _isLastPage ? 'DONE' : 'NEXT',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
 }
 
-// Widget konten halaman yang sudah disesuaikan dengan desain Figma
 class OnboardingPageContent extends StatelessWidget {
   const OnboardingPageContent({
     super.key,
@@ -130,7 +143,7 @@ class OnboardingPageContent extends StatelessWidget {
   });
 
   final String image;
-  final IconData iconData; // Parameter untuk ikon
+  final IconData iconData;
   final String title;
   final String description;
 
@@ -141,42 +154,39 @@ class OnboardingPageContent extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Ilustrasi utama
           Image.asset(
             image,
-            height: MediaQuery.of(context).size.height * 0.35, // Atur tinggi gambar
+            height: MediaQuery.of(context).size.height * 0.35,
           ),
-          const SizedBox(height: 60), // Jarak antara gambar dan ikon
+          const SizedBox(height: 40),
 
-          // Ikon dalam lingkaran ungu
           CircleAvatar(
-            radius: 50, // Ukuran lingkaran
-            backgroundColor: Colors.deepPurple.shade100, // Warna latar lingkaran
+            radius: 50,
+            backgroundColor: Colors.white.withOpacity(0.2),
             child: Icon(
               iconData,
-              size: 50, // Ukuran ikon
-              color: Colors.deepPurple, // Warna ikon
+              size: 50,
+              color: Colors.white,
             ),
           ),
-          const SizedBox(height: 40), // Jarak antara ikon dan judul
+          const SizedBox(height: 40),
 
-          // Judul utama (Dummy Teks baris pertama)
           Text(
             title,
-            style: const TextStyle(
+            style: GoogleFonts.poppins(
               fontSize: 26,
               fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16), // Jarak antara judul dan deskripsi
+          const SizedBox(height: 16),
 
-          // Deskripsi (Dummy Teks baris kedua dan ketiga)
           Text(
             description,
-            style: const TextStyle(
+            style: GoogleFonts.poppins(
               fontSize: 16,
-              color: Colors.black54,
+              color: Colors.white.withOpacity(0.9),
             ),
             textAlign: TextAlign.center,
           ),

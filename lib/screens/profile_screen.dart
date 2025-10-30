@@ -123,119 +123,158 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+Widget build(BuildContext context) {
+  return Scaffold(
+    extendBodyBehindAppBar: true,
+    backgroundColor: Colors.transparent,
+    appBar: AppBar(
+      title: const Text('Profil & Setting'),
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Profil & Setting'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
+      foregroundColor: Colors.black,
+      elevation: 0,
+    ),
+    body: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFCBF1F5), Color(0xFFD4C1EC)],
+        ),
       ),
-      body: AnimatedBuilder(
-        animation: AuthService.instance,
-        builder: (context, _) {
-          final user = AuthService.instance.currentUser;
-          if (user == null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (route) => false,
-                );
-              }
-            });
-            return const Center(child: CircularProgressIndicator());
-          }
+      child: SafeArea(
+        child: AnimatedBuilder(
+          animation: AuthService.instance,
+          builder: (context, _) {
+            final user = AuthService.instance.currentUser;
+            if (user == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    (route) => false,
+                  );
+                }
+              });
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          // Ambil path gambar langsung dari AuthService sebagai sumber kebenaran utama
-          final imagePath = user.photoUrl;
+            final imagePath = user.photoUrl;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 70,
-                          backgroundColor: Colors.pink.shade100,
-                          backgroundImage: imagePath != null ? FileImage(File(imagePath)) : null,
-                          child: imagePath == null ? Icon(Icons.person, size: 80, color: Colors.pink.shade300) : null,
-                        ),
-                        Positioned(
-                          bottom: 0, right: 0,
-                          child: InkWell(
-                            onTap: _pickAndSaveImage,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.pinkAccent,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 70,
+                            backgroundColor: Colors.pink.shade100,
+                            backgroundImage: imagePath != null ? FileImage(File(imagePath)) : null,
+                            child: imagePath == null
+                                ? Icon(Icons.person, size: 80, color: Colors.pink.shade300)
+                                : null,
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: InkWell(
+                              onTap: _pickAndSaveImage,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.pinkAccent,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                ),
+                                child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
                               ),
-                              child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    user.name,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    user.email,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 32),
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: _buildInputDecoration(label: 'Full Name', icon: Icons.person_outline),
-                    validator: (v) => (v == null || v.isEmpty) ? 'The name field cannot be left blank.' : null,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _saveProfileChanges,
-                    style: _buildButtonStyle(Colors.pinkAccent),
-                    child: const Text('Save Changes'),
-                  ),
-                  const Divider(height: 60),
-                  const Text('Change Password', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _newPasswordController,
-                    decoration: _buildInputDecoration(label: 'New Password', icon: Icons.lock_outline),
-                    obscureText: true,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    decoration: _buildInputDecoration(label: 'Confirm New Password', icon: Icons.lock_reset_outlined),
-                    obscureText: true,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _changePassword,
-                    style: _buildButtonStyle(Colors.deepPurple.shade400),
-                    child: const Text('Change Password'),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    Text(
+                      user.name,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      user.email,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // --- Full Name ---
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: _buildInputDecoration(
+                        label: 'Full Name',
+                        icon: Icons.person_outline,
+                      ),
+                      validator: (v) => (v == null || v.isEmpty)
+                          ? 'The name field cannot be left blank.'
+                          : null,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // --- Save Changes ---
+                    ElevatedButton(
+                      onPressed: _saveProfileChanges,
+                      style: _buildButtonStyle(const Color(0xFF9B5DE5)), // Ungu
+                      child: const Text('Save Changes'),
+                    ),
+
+                    const Divider(height: 60),
+
+                    const Text(
+                      'Change Password',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // --- Password Fields ---
+                    TextFormField(
+                      controller: _newPasswordController,
+                      obscureText: true,
+                      decoration: _buildInputDecoration(
+                        label: 'New Password',
+                        icon: Icons.lock_outline,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      obscureText: true,
+                      decoration: _buildInputDecoration(
+                        label: 'Confirm New Password',
+                        icon: Icons.lock_reset_outlined,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // --- Change Password Button ---
+                    ElevatedButton(
+                      onPressed: _changePassword,
+                      style: _buildButtonStyle(Colors.pinkAccent),
+                      child: const Text('Change Password'),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   InputDecoration _buildInputDecoration({required String label, required IconData icon}) {
     return InputDecoration(

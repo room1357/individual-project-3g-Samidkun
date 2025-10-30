@@ -1,7 +1,7 @@
-// lib/screens/register_screen.dart
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart'; // <- tambahkan ke pubspec.yaml
 import '../services/auth_service.dart';
-import '../services/user_directory_service.dart'; // <-- penting
+import '../services/user_directory_service.dart';
 import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -14,8 +14,8 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _nameC = TextEditingController();
   final _emailC = TextEditingController();
-  final _passC  = TextEditingController();
-  final _usernameC = TextEditingController(); // <-- baru
+  final _passC = TextEditingController();
+  final _usernameC = TextEditingController();
 
   bool _loading = false;
 
@@ -24,12 +24,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _nameC.dispose();
     _emailC.dispose();
     _passC.dispose();
-    _usernameC.dispose(); // <-- baru
+    _usernameC.dispose();
     super.dispose();
   }
 
   String _sanitizeUsername(String raw) {
-    // ke lowercase, buang @, spasi → -, sisakan huruf/angka/._-
     final s = raw.trim().toLowerCase().replaceAll('@', '').replaceAll(' ', '-');
     final cleaned = s.replaceAll(RegExp(r'[^a-z0-9._-]'), '');
     return cleaned;
@@ -38,9 +37,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _doRegister() async {
     final name = _nameC.text.trim();
     final email = _emailC.text.trim();
-    final pass  = _passC.text;
+    final pass = _passC.text;
 
-    // username dari input; kalau kosong → pakai prefix email
     String username = _sanitizeUsername(
       _usernameC.text.isEmpty ? email.split('@').first : _usernameC.text,
     );
@@ -51,6 +49,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       return;
     }
+
     if (username.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Username tidak boleh kosong')),
@@ -58,7 +57,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    // Cek duplikasi username di direktori lokal
     final exists = UserDirectoryService.instance.findByUsername(username) != null;
     if (exists) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -80,9 +78,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    // Registrasi sukses → ambil user aktif lalu daftarkan ke direktori
     final u = AuthService.instance.currentUser!;
-    // kalau AuthService kamu belum menyimpan "username", direktori inilah sumber kebenaran
     UserDirectoryService.instance.upsert(
       id: u.id,
       username: username,
@@ -90,7 +86,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       email: u.email,
     );
 
-    // lanjut ke home
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
@@ -102,83 +97,119 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 40),
-            const Text(
-              'List',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 60),
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFB2F7EF), Color(0xFFB388EB)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 16),
+                Text(
+                  'Register New Account',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 40),
 
-            // Name
-            TextField(
-              controller: _nameC,
-              decoration: InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 20),
+                _buildField('Name', _nameC, Icons.person),
+                const SizedBox(height: 20),
 
-            // Username (baru)
-            TextField(
-              controller: _usernameC,
-              decoration: InputDecoration(
-                labelText: 'Username',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 20),
+                _buildField('Username', _usernameC, Icons.alternate_email),
+                const SizedBox(height: 20),
 
-            // Email
-            TextField(
-              controller: _emailC,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 20),
+                _buildField('Email', _emailC, Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress),
+                const SizedBox(height: 20),
 
-            // Password
-            TextField(
-              controller: _passC,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 40),
+                _buildField('Password', _passC, Icons.lock_outline,
+                    obscure: true),
+                const SizedBox(height: 40),
 
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 216, 0, 198),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-              ),
-              onPressed: _loading ? null : _doRegister,
-              child: _loading
-                  ? const SizedBox(
-                      height: 22, width: 22,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                    )
-                  : const Text('List', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                    backgroundColor: const Color(0xFFB388EB),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  onPressed: _loading ? null : _doRegister,
+                  child: _loading
+                      ? const CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        )
+                      : Text(
+                          'Register Now!',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 30),
+
+                // Optional motivasi / highlight section
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  margin: const EdgeInsets.only(top: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '“Create your account and start mastering your money today.”',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                )
+              ],
             ),
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildField(String label, TextEditingController controller, IconData icon,
+      {bool obscure = false, TextInputType? keyboardType}) {
+    return TextField(
+      controller: controller,
+      obscureText: obscure,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: GoogleFonts.poppins(),
+        prefixIcon: Icon(icon),
+        fillColor: Colors.white,
+        filled: true,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
       ),
     );
