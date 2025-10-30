@@ -62,84 +62,154 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final s = context.watch<SettingsService>();
-    final df = DateFormat('dd/MM/yyyy HH:mm');
+@override
+Widget build(BuildContext context) {
+  final s = context.watch<SettingsService>();
+  final df = DateFormat('dd/MM/yyyy HH:mm');
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings'), centerTitle: true),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          const Text('Currency', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-
-          // Gunakan initialValue (value deprecated di Flutter terbaru)
-          DropdownButtonFormField<String>(
-            initialValue: s.currencyCode, // 'IDR' atau 'USD'
-            decoration: const InputDecoration(border: OutlineInputBorder()),
-            items: const [
-              DropdownMenuItem(value: 'IDR', child: Text('IDR – Indonesian Rupiah (Rp)')),
-              DropdownMenuItem(value: 'USD', child: Text('USD – US Dollar (\$)')),
-            ],
-            onChanged: (v) async {
-              if (v == null) return;
-              await context.read<SettingsService>().updateCurrency(v);
-            },
-          ),
-
-          const SizedBox(height: 24),
-          const Text('Exchange rate (1 USD → IDR)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-
-          // Tampilkan info rate aktif
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text('Rate aktif: ${s.rateIdrPerUsd.toStringAsFixed(2)} IDR'),
-            subtitle: Text(
-              s.rateUpdatedAt == null
-                  ? 'Belum pernah update'
-                  : 'Terakhir update: ${df.format(s.rateUpdatedAt!)}',
-            ),
-            trailing: s.fetchingRate
-                ? const SizedBox(
-                    width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                : IconButton(
-                    icon: const Icon(Icons.refresh),
-                    tooltip: 'Update dari API',
-                    onPressed: _updateRateFromApi,
-                  ),
-          ),
-
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _manualRateC,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Manual rate (IDR per 1 USD)',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: _saveManualRate,
-            child: const Text('Simpan manual rate'),
-          ),
-
-          const SizedBox(height: 24),
-          const Divider(),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Preview simbol & format'),
-            subtitle: Text(
-              'Simbol: ${s.currencySymbol}\n'
-              'Contoh format: '
-              '${s.currencyCode == "USD" ? "\$12.34" : "Rp 12.345"}',
-            ),
-          ),
-        ],
+  return Scaffold(
+    extendBodyBehindAppBar: true,
+    backgroundColor: Colors.transparent,
+    appBar: AppBar(
+      title: const Text('Settings'),
+      centerTitle: true,
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
+      elevation: 0,
+    ),
+    body: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFCBF1F5), Color(0xFFD4C1EC)],
+        ),
       ),
-    );
-  }
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(24),
+          children: [
+            const Text(
+              'Currency',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.95),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: DropdownButtonFormField<String>(
+                value: s.currencyCode,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                ),
+                items: const [
+                  DropdownMenuItem(
+                      value: 'IDR',
+                      child: Text('IDR – Indonesian Rupiah (Rp)')),
+                  DropdownMenuItem(
+                      value: 'USD', child: Text('USD – US Dollar (\$)')),
+                ],
+                onChanged: (v) async {
+                  if (v == null) return;
+                  await context.read<SettingsService>().updateCurrency(v);
+                },
+              ),
+            ),
+
+            const SizedBox(height: 28),
+            const Text(
+              'Exchange Rate (1 USD → IDR)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                title: Text(
+                    'Current Rate: ${s.rateIdrPerUsd.toStringAsFixed(2)} IDR'),
+                subtitle: Text(
+                  s.rateUpdatedAt == null
+                      ? 'Never updated'
+                      : 'Last updated: ${df.format(s.rateUpdatedAt!)}',
+                ),
+                trailing: s.fetchingRate
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : IconButton(
+                        icon: const Icon(Icons.refresh),
+                        tooltip: 'Update from API',
+                        onPressed: _updateRateFromApi,
+                      ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _manualRateC,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: 'Manual rate (IDR per 1 USD)',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: _saveManualRate,
+              icon: const Icon(Icons.save),
+              label: const Text('Save Manual Rate'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF9B5DE5),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+
+            const SizedBox(height: 28),
+            const Divider(),
+            const Text(
+              'Currency Preview',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Symbol: ${s.currencySymbol}\n'
+                'Example format: '
+                '${s.currencyCode == "USD" ? "\$12.34" : "Rp 12.345"}',
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 }

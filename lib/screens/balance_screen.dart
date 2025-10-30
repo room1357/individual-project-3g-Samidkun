@@ -9,38 +9,44 @@ import '../utils/category_style.dart';
 class BalanceScreen extends StatelessWidget {
   const BalanceScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    final expSvc = ExpenseService.instance;
-    final incSvc = IncomeService.instance;
+ @override
+Widget build(BuildContext context) {
+  final expSvc = ExpenseService.instance;
+  final incSvc = IncomeService.instance;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Balance'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        centerTitle: true,
+  return Scaffold(
+    extendBodyBehindAppBar: true,
+    backgroundColor: Colors.transparent,
+    appBar: AppBar(
+      title: const Text('Balance'),
+      backgroundColor: Colors.transparent,
+      foregroundColor: Colors.black,
+      elevation: 0,
+      centerTitle: true,
+    ),
+    body: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFCBF1F5), Color(0xFFD4C1EC)],
+        ),
       ),
-      body: AnimatedBuilder(
-        // rebuild kalau income ATAU expense berubah
+      child: AnimatedBuilder(
         animation: Listenable.merge([expSvc, incSvc]),
         builder: (context, _) {
           final totalIncome = incSvc.totalAll;
           final totalExpense = expSvc.totalAll;
           final balance = totalIncome - totalExpense;
 
-          // sort terbaru
           final latestIncomes = List<Income>.of(incSvc.incomes)
             ..sort((a, b) => b.date.compareTo(a.date));
           final latestExpenses = List<Expense>.of(expSvc.expenses)
             ..sort((a, b) => b.date.compareTo(a.date));
 
           return ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 100, 24, 24),
             children: [
-              // KPI cards
               Row(
                 children: [
                   Expanded(
@@ -48,7 +54,7 @@ class BalanceScreen extends StatelessWidget {
                       title: 'Total Income',
                       valueText: '+ ${rp(totalIncome, context)}',
                       color: Colors.green,
-                      icon: Icons.south_west, // panah masuk
+                      icon: Icons.south_west,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -57,7 +63,7 @@ class BalanceScreen extends StatelessWidget {
                       title: 'Total Expense',
                       valueText: '- ${rp(totalExpense, context)}',
                       color: Colors.red,
-                      icon: Icons.north_east, // panah keluar
+                      icon: Icons.north_east,
                     ),
                   ),
                 ],
@@ -66,25 +72,26 @@ class BalanceScreen extends StatelessWidget {
               _kpiCard(
                 title: 'Balance',
                 valueText: rp(balance, context),
-                color: balance >= 0 ? Colors.teal : Colors.red,
+                color: balance >= 0 ? Colors.purple : Colors.red,
                 icon: Icons.account_balance_wallet_outlined,
               ),
               const SizedBox(height: 28),
 
-              // Lists
-              const Text('Latest Incomes',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'Latest Incomes',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
               if (latestIncomes.isEmpty)
                 const _EmptyHint(text: 'There has been no income yet.')
               else
-                ...latestIncomes.take(5).map(
-  (i) => _incomeDismissible(context, i, incSvc),
-),
+                ...latestIncomes.take(5).map((i) => _incomeDismissible(context, i, incSvc)),
 
               const SizedBox(height: 24),
-              const Text('Latest Spending',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'Latest Spending',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
               if (latestExpenses.isEmpty)
                 const _EmptyHint(text: 'No expenses yet.')
@@ -94,8 +101,10 @@ class BalanceScreen extends StatelessWidget {
           );
         },
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   // ---------- Widgets kecil ----------
 

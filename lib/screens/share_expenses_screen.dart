@@ -1,4 +1,3 @@
-// lib/screens/share_expenses_screen.dart
 import 'package:flutter/material.dart';
 import '../services/expense_service.dart';
 
@@ -73,43 +72,79 @@ class _ShareExpensesScreenState extends State<ShareExpensesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Share Expenses'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.black,
         centerTitle: true,
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            const Text(
-              'Share ALL your expenses so other users can VIEW them (read-only).',
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _usernameC,
-              textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                labelText: 'Destination username',
-                hintText: 'Example : KUNGKINGKANG',
-                border: OutlineInputBorder(),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFCBF1F5), Color(0xFFD4C1EC)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(24, 100, 24, 24),
+            children: [
+              const Text(
+                'Share ALL your expenses so other users can VIEW them (read-only).',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
               ),
-              validator: (v) =>
-                  (v == null || _sanitize(v).isEmpty) ? 'Username must be filled in' : null,
-              onFieldSubmitted: (_) => _doShare(),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _doShare,
-              icon: const Icon(Icons.share),
-              label: const Text('Share ALL expenses'),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: _doUnshare,
-              child: const Text('Stop sharing to this user'),
-            ),
-          ],
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _usernameC,
+                textInputAction: TextInputAction.done,
+                decoration: InputDecoration(
+                  labelText: 'Destination username',
+                  hintText: 'Example: KUNGKINGKANG',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                validator: (v) => (v == null || _sanitize(v).isEmpty)
+                    ? 'Username must be filled in'
+                    : null,
+                onFieldSubmitted: (_) => _doShare(),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _doShare,
+                icon: const Icon(Icons.share),
+                label: const Text('Share ALL expenses'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF9B5DE5),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: _doUnshare,
+                child: const Text(
+                  'Stop sharing to this user',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
